@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import ArrowDownLeftIcon from '@lucide/svelte/icons/arrow-down-left';
 	import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2';
@@ -162,26 +163,26 @@
 									<div class="flex flex-wrap items-center gap-2">
 										<span class="font-medium">{tx.description}</span>
 										{#if tx.status === 'confirmed'}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
+											<Badge
+												variant="default"
+												class="bg-green-100 text-green-700 hover:bg-green-100"
 											>
-												<CheckCircle2Icon class="h-3 w-3" />
+												<CheckCircle2Icon class="mr-1 h-3 w-3" />
 												Confirmed
-											</span>
+											</Badge>
 										{:else if tx.status === 'pending'}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+											<Badge
+												variant="default"
+												class="bg-amber-100 text-amber-700 hover:bg-amber-100"
 											>
-												<ClockIcon class="h-3 w-3" />
+												<ClockIcon class="mr-1 h-3 w-3" />
 												Pending
-											</span>
+											</Badge>
 										{:else if tx.status === 'failed'}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
-											>
-												<XCircleIcon class="h-3 w-3" />
+											<Badge variant="destructive">
+												<XCircleIcon class="mr-1 h-3 w-3" />
 												Failed
-											</span>
+											</Badge>
 										{/if}
 									</div>
 									<div class="space-y-1 text-xs text-muted-foreground">

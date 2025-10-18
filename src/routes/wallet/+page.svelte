@@ -1,6 +1,9 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import CoinsIcon from '@lucide/svelte/icons/coins';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
@@ -8,6 +11,7 @@
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2';
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -160,25 +164,67 @@
 			</Card.Header>
 			<Card.Content class="space-y-4">
 				<div class="space-y-2">
-					<label class="text-sm font-medium">Recipient Address</label>
-					<input
-						type="text"
-						placeholder="0x..."
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-					/>
+					<Label for="recipient">Recipient Address</Label>
+					<Input id="recipient" type="text" placeholder="0x..." />
 				</div>
 				<div class="space-y-2">
-					<label class="text-sm font-medium">Amount</label>
-					<input
-						type="text"
-						placeholder="0.0"
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-					/>
+					<Label for="amount">Amount</Label>
+					<Input id="amount" type="text" placeholder="0.0" />
 				</div>
-				<Button class="w-full">
-					<ArrowUpRightIcon class="mr-2 h-4 w-4" />
-					Send Transaction
-				</Button>
+				<Dialog.Root>
+					<Dialog.Trigger class="w-full">
+						<Button class="w-full">
+							<ArrowUpRightIcon class="mr-2 h-4 w-4" />
+							Send Transaction
+						</Button>
+					</Dialog.Trigger>
+					<Dialog.Content>
+						<Dialog.Header>
+							<Dialog.Title>Confirm Transaction</Dialog.Title>
+							<Dialog.Description>
+								Review your transaction details before confirming.
+							</Dialog.Description>
+						</Dialog.Header>
+						<div class="space-y-4 py-4">
+							<div class="space-y-3 rounded-lg border p-4">
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-muted-foreground">From</span>
+									<code class="text-sm font-medium">0x742d...5f8a</code>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-muted-foreground">To</span>
+									<code class="text-sm font-medium">0x1234...abcd</code>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-muted-foreground">Amount</span>
+									<span class="text-sm font-medium">0.5 ETH</span>
+								</div>
+								<div class="flex items-center justify-between border-t pt-3">
+									<span class="text-sm text-muted-foreground">Estimated Gas</span>
+									<span class="text-sm font-medium">0.002 ETH</span>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-sm font-semibold">Total</span>
+									<span class="text-sm font-semibold">0.502 ETH</span>
+								</div>
+							</div>
+							<div class="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+								<CheckCircle2Icon class="h-5 w-5 text-blue-600" />
+								<div class="space-y-1">
+									<p class="text-sm font-medium text-blue-900">Transaction Details</p>
+									<p class="text-sm text-blue-700">
+										This transaction will be logged on the blockchain and cannot be reversed. Make
+										sure you've verified the recipient address.
+									</p>
+								</div>
+							</div>
+						</div>
+						<Dialog.Footer>
+							<Button variant="outline" onclick={() => {}}>Cancel</Button>
+							<Button onclick={() => {}}>Confirm & Send</Button>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Root>
 			</Card.Content>
 		</Card.Root>
 

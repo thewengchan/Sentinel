@@ -1,6 +1,9 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Progress } from '$lib/components/ui/progress/index.js';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import ServerIcon from '@lucide/svelte/icons/server';
@@ -141,15 +144,19 @@
 								<p class="text-sm font-medium">{alert.message}</p>
 								<div class="flex items-center gap-2">
 									<p class="text-xs text-muted-foreground">{alert.timestamp}</p>
-									<span
-										class="rounded-full px-2 py-0.5 text-xs font-medium {alert.status === 'resolved'
-											? 'bg-green-100 text-green-700'
-											: alert.status === 'investigating'
-												? 'bg-amber-100 text-amber-700'
-												: 'bg-blue-100 text-blue-700'}"
-									>
-										{alert.status}
-									</span>
+									{#if alert.status === 'resolved'}
+										<Badge variant="default" class="bg-green-100 text-green-700 hover:bg-green-100">
+											{alert.status}
+										</Badge>
+									{:else if alert.status === 'investigating'}
+										<Badge variant="default" class="bg-amber-100 text-amber-700 hover:bg-amber-100">
+											{alert.status}
+										</Badge>
+									{:else}
+										<Badge variant="default" class="bg-blue-100 text-blue-700 hover:bg-blue-100">
+											{alert.status}
+										</Badge>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -170,9 +177,7 @@
 						<span class="text-muted-foreground">Storage Usage</span>
 						<span class="font-medium">{systemStats.storageUsed} / 1 TB</span>
 					</div>
-					<div class="h-2 w-full rounded-full bg-secondary">
-						<div class="h-2 w-[23.4%] rounded-full bg-blue-600"></div>
-					</div>
+					<Progress value={23.4} class="[&>div]:bg-blue-600" />
 				</div>
 
 				<div>
@@ -180,9 +185,7 @@
 						<span class="text-muted-foreground">Uptime</span>
 						<span class="font-medium">{systemStats.uptime}</span>
 					</div>
-					<div class="h-2 w-full rounded-full bg-secondary">
-						<div class="h-2 w-[99.9%] rounded-full bg-green-600"></div>
-					</div>
+					<Progress value={99.9} class="[&>div]:bg-green-600" />
 				</div>
 
 				<div>
@@ -190,9 +193,7 @@
 						<span class="text-muted-foreground">System Health</span>
 						<span class="font-medium">{systemStats.systemHealth}%</span>
 					</div>
-					<div class="h-2 w-full rounded-full bg-secondary">
-						<div class="h-2 w-[98.5%] rounded-full bg-green-600"></div>
-					</div>
+					<Progress value={systemStats.systemHealth} class="[&>div]:bg-green-600" />
 				</div>
 
 				<div class="flex items-center gap-2 rounded-lg bg-green-50 p-3">
@@ -277,16 +278,12 @@
 	</Card.Root>
 
 	<!-- Access Control Warning -->
-	<Card.Root class="border-amber-200 bg-amber-50">
-		<Card.Content class="flex items-start gap-3 p-4">
-			<AlertTriangleIcon class="h-5 w-5 text-amber-600" />
-			<div class="space-y-1">
-				<p class="text-sm font-medium text-amber-900">Admin Access Notice</p>
-				<p class="text-xs text-amber-800">
-					You are viewing sensitive system information. All actions are logged and monitored for
-					security purposes.
-				</p>
-			</div>
-		</Card.Content>
-	</Card.Root>
+	<Alert.Root variant="default" class="border-amber-200 bg-amber-50">
+		<AlertTriangleIcon class="h-5 w-5 text-amber-600" />
+		<Alert.Title class="text-amber-900">Admin Access Notice</Alert.Title>
+		<Alert.Description class="text-amber-800">
+			You are viewing sensitive system information. All actions are logged and monitored for
+			security purposes.
+		</Alert.Description>
+	</Alert.Root>
 </div>

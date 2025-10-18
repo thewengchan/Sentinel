@@ -1,11 +1,16 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import CrownIcon from '@lucide/svelte/icons/crown';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
+	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 
 	// Role definitions
 	const roles = [
@@ -107,15 +112,15 @@
 								<div class="flex items-center justify-between rounded-lg border p-3">
 									<span class="text-sm">{permission.name}</span>
 									{#if permission.granted}
-										<div class="flex items-center gap-2">
-											<span class="text-xs font-medium text-green-600">Granted</span>
-											<CheckIcon class="h-4 w-4 text-green-600" />
-										</div>
+										<Badge variant="default" class="bg-green-100 text-green-700 hover:bg-green-100">
+											<CheckIcon class="mr-1 h-4 w-4" />
+											Granted
+										</Badge>
 									{:else}
-										<div class="flex items-center gap-2">
-											<span class="text-xs font-medium text-red-600">Denied</span>
-											<XIcon class="h-4 w-4 text-red-600" />
-										</div>
+										<Badge variant="destructive">
+											<XIcon class="mr-1 h-4 w-4" />
+											Denied
+										</Badge>
 									{/if}
 								</div>
 							{/each}
@@ -135,31 +140,77 @@
 		<Card.Content>
 			<div class="space-y-4">
 				<div class="space-y-2">
-					<label class="text-sm font-medium">Select Member</label>
-					<select class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-						<option>Emma Doe (Child/Member)</option>
-						<option>Alex Doe (Child/Member)</option>
-						<option>Sarah Doe (Child/Member)</option>
-						<option>Tom Doe (Child/Member)</option>
-					</select>
+					<label for="select-member" class="text-sm font-medium">Select Member</label>
+					<Select.Root name="select-member" type="single">
+						<Select.Trigger class="w-full" placeholder="Choose a family member" />
+						<Select.Content>
+							<Select.Item value="emma">Emma Doe (Child/Member)</Select.Item>
+							<Select.Item value="alex">Alex Doe (Child/Member)</Select.Item>
+							<Select.Item value="sarah">Sarah Doe (Child/Member)</Select.Item>
+							<Select.Item value="tom">Tom Doe (Child/Member)</Select.Item>
+						</Select.Content>
+					</Select.Root>
 				</div>
 				<div class="space-y-2">
-					<label class="text-sm font-medium">New Role</label>
-					<select class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-						<option value="child">Child/Member (Monitored)</option>
-						<option value="parent">Parent/Admin (Full Access)</option>
-					</select>
+					<label for="new-role" class="text-sm font-medium">New Role</label>
+					<Select.Root name="new-role" type="single">
+						<Select.Trigger class="w-full" placeholder="Select a role" />
+						<Select.Content>
+							<Select.Item value="child">Child/Member (Monitored)</Select.Item>
+							<Select.Item value="parent">Parent/Admin (Full Access)</Select.Item>
+						</Select.Content>
+					</Select.Root>
 				</div>
-				<div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
-					<p class="text-sm text-amber-800">
-						<strong>Warning:</strong> Changing a member to Parent/Admin will grant them full access to
-						all family data and settings. This action cannot be undone automatically.
-					</p>
-				</div>
-				<Button class="w-full">
-					<ShieldIcon class="mr-2 h-4 w-4" />
-					Update Role
-				</Button>
+				<Alert.Root variant="default" class="border-amber-200 bg-amber-50">
+					<AlertTriangleIcon class="h-4 w-4 text-amber-600" />
+					<Alert.Title class="text-amber-900">Warning</Alert.Title>
+					<Alert.Description class="text-amber-800">
+						Changing a member to Parent/Admin will grant them full access to all family data and
+						settings. This action cannot be undone automatically.
+					</Alert.Description>
+				</Alert.Root>
+				<Dialog.Root>
+					<Dialog.Trigger class="w-full">
+						<Button class="w-full">
+							<ShieldIcon class="mr-2 h-4 w-4" />
+							Update Role
+						</Button>
+					</Dialog.Trigger>
+					<Dialog.Content>
+						<Dialog.Header>
+							<Dialog.Title>Confirm Role Change</Dialog.Title>
+							<Dialog.Description>
+								You are about to change the role for a family member.
+							</Dialog.Description>
+						</Dialog.Header>
+						<div class="space-y-4 py-4">
+							<div class="space-y-2">
+								<p class="text-sm font-medium">Member: Emma Doe</p>
+								<p class="text-sm text-muted-foreground">Current Role: Child/Member</p>
+								<p class="text-sm text-muted-foreground">New Role: Parent/Admin</p>
+							</div>
+							<div
+								class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4"
+							>
+								<AlertTriangleIcon class="h-5 w-5 text-amber-600" />
+								<div class="space-y-1">
+									<p class="text-sm font-medium text-amber-900">Important</p>
+									<p class="text-sm text-amber-700">
+										Granting Parent/Admin role will give this user:<br />
+										• Full access to all family data<br />
+										• Ability to invite/remove members<br />
+										• Access to blockchain features<br />
+										• Permission to change roles
+									</p>
+								</div>
+							</div>
+						</div>
+						<Dialog.Footer>
+							<Button variant="outline" onclick={() => {}}>Cancel</Button>
+							<Button onclick={() => {}}>Confirm Change</Button>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Root>
 			</div>
 		</Card.Content>
 	</Card.Root>
@@ -172,9 +223,7 @@
 					<Card.Title>Custom Permissions</Card.Title>
 					<Card.Description>Create custom roles with specific permissions</Card.Description>
 				</div>
-				<span class="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-					Coming Soon
-				</span>
+				<Badge variant="secondary">Coming Soon</Badge>
 			</div>
 		</Card.Header>
 		<Card.Content>

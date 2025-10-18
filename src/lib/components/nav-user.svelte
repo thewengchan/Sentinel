@@ -2,6 +2,7 @@
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
 	import BellIcon from '@lucide/svelte/icons/bell';
@@ -43,9 +44,9 @@
 							<span class="truncate text-xs text-muted-foreground">{user.email}</span>
 						</div>
 						<div class="ml-auto flex items-center gap-2">
-							<span class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+							<Badge variant="secondary" class="text-xs">
 								{roleDisplay()}
-							</span>
+							</Badge>
 							<ChevronsUpDownIcon class="size-4" />
 						</div>
 					</Sidebar.MenuButton>
@@ -66,7 +67,9 @@
 						<div class="grid flex-1 text-left text-sm leading-tight">
 							<span class="truncate font-medium">{user.name}</span>
 							<span class="truncate text-xs text-muted-foreground">{user.email}</span>
-							<span class="mt-1 text-xs font-medium text-primary">{roleDisplay()}</span>
+							<Badge variant="secondary" class="mt-1 w-fit text-xs">
+								{roleDisplay()}
+							</Badge>
 						</div>
 					</div>
 				</DropdownMenu.Label>

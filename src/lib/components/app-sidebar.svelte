@@ -26,10 +26,11 @@
 				title: 'Dashboard',
 				url: '/',
 				icon: LayoutDashboardIcon,
-				isActive: true
+				isActive: true,
 			},
 			{
 				title: 'Chat',
+				url: '/chat',
 				icon: MessageSquareIcon,
 				items: [
 					{

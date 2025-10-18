@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import ShieldXIcon from '@lucide/svelte/icons/shield-x';
@@ -146,26 +147,20 @@
 									<span class="font-semibold">{log.user}</span>
 									<span class="text-xs text-muted-foreground">{log.timestamp}</span>
 									{#if log.status === 'safe'}
-										<span
-											class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
-										>
-											<ShieldCheckIcon class="h-3 w-3" />
+										<Badge variant="default" class="bg-green-100 text-green-700 hover:bg-green-100">
+											<ShieldCheckIcon class="mr-1 h-3 w-3" />
 											Safe
-										</span>
+										</Badge>
 									{:else if log.status === 'flagged'}
-										<span
-											class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700"
-										>
-											<ShieldAlertIcon class="h-3 w-3" />
+										<Badge variant="default" class="bg-amber-100 text-amber-700 hover:bg-amber-100">
+											<ShieldAlertIcon class="mr-1 h-3 w-3" />
 											Flagged
-										</span>
+										</Badge>
 									{:else if log.status === 'blocked'}
-										<span
-											class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700"
-										>
-											<ShieldXIcon class="h-3 w-3" />
+										<Badge variant="destructive">
+											<ShieldXIcon class="mr-1 h-3 w-3" />
 											Blocked
-										</span>
+										</Badge>
 									{/if}
 								</div>
 								<div>

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
 	import MailIcon from '@lucide/svelte/icons/mail';
@@ -80,10 +85,46 @@
 			<h1 class="text-3xl font-bold tracking-tight">Family Members</h1>
 			<p class="text-muted-foreground">View and manage your family members</p>
 		</div>
-		<Button>
-			<UserPlusIcon class="mr-2 h-4 w-4" />
-			Invite Member
-		</Button>
+		<Dialog.Root>
+			<Dialog.Trigger>
+				<Button>
+					<UserPlusIcon class="mr-2 h-4 w-4" />
+					Invite Member
+				</Button>
+			</Dialog.Trigger>
+			<Dialog.Content>
+				<Dialog.Header>
+					<Dialog.Title>Invite Family Member</Dialog.Title>
+					<Dialog.Description>
+						Send an invitation to a family member to join your monitoring network.
+					</Dialog.Description>
+				</Dialog.Header>
+				<div class="space-y-4 py-4">
+					<div class="space-y-2">
+						<Label for="invite-name">Full Name</Label>
+						<Input id="invite-name" placeholder="John Doe" />
+					</div>
+					<div class="space-y-2">
+						<Label for="invite-email">Email Address</Label>
+						<Input id="invite-email" type="email" placeholder="john@example.com" />
+					</div>
+					<div class="space-y-2">
+						<Label for="invite-role">Role</Label>
+						<select
+							id="invite-role"
+							class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+						>
+							<option value="child">Child/Member (Monitored)</option>
+							<option value="parent">Parent/Admin (Full Access)</option>
+						</select>
+					</div>
+				</div>
+				<Dialog.Footer>
+					<Button variant="outline" onclick={() => {}}>Cancel</Button>
+					<Button onclick={() => {}}>Send Invitation</Button>
+				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
 	</div>
 
 	<!-- Family Stats -->
@@ -153,25 +194,20 @@
 									<div class="flex items-center gap-2">
 										<h3 class="text-lg font-semibold">{member.name}</h3>
 										{#if member.role === 'parent'}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+											<Badge
+												variant="default"
+												class="bg-amber-100 text-amber-700 hover:bg-amber-100"
 											>
-												<CrownIcon class="h-3 w-3" />
+												<CrownIcon class="mr-1 h-3 w-3" />
 												Parent
-											</span>
+											</Badge>
 										{:else}
-											<span
-												class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
-											>
+											<Badge variant="default" class="bg-blue-100 text-blue-700 hover:bg-blue-100">
 												Member
-											</span>
+											</Badge>
 										{/if}
 										{#if member.status === 'pending'}
-											<span
-												class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
-											>
-												Pending
-											</span>
+											<Badge variant="secondary">Pending</Badge>
 										{/if}
 									</div>
 									<div class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -208,14 +244,12 @@
 										</div>
 									</div>
 								{:else}
-									<div
-										class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3"
-									>
+									<Alert.Root variant="default" class="border-amber-200 bg-amber-50">
 										<ShieldAlertIcon class="h-4 w-4 text-amber-600" />
-										<p class="text-sm text-amber-700">
+										<Alert.Description class="text-amber-700">
 											Invitation pending - Member hasn't accepted yet
-										</p>
-									</div>
+										</Alert.Description>
+									</Alert.Root>
 								{/if}
 
 								<div class="flex gap-2 pt-2">
@@ -248,16 +282,18 @@
 			<div class="space-y-4">
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
-						<label class="text-sm font-medium">Name</label>
+						<label for="member-name" class="text-sm font-medium">Name</label>
 						<input
+							id="member-name"
 							type="text"
 							placeholder="Full name"
 							class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 						/>
 					</div>
 					<div class="space-y-2">
-						<label class="text-sm font-medium">Email Address</label>
+						<label for="member-email" class="text-sm font-medium">Email Address</label>
 						<input
+							id="member-email"
 							type="email"
 							placeholder="email@example.com"
 							class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -265,8 +301,11 @@
 					</div>
 				</div>
 				<div class="space-y-2">
-					<label class="text-sm font-medium">Role</label>
-					<select class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+					<label for="member-role" class="text-sm font-medium">Role</label>
+					<select
+						id="member-role"
+						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+					>
 						<option value="child">Child/Member (Monitored)</option>
 						<option value="parent">Parent/Admin (Full Access)</option>
 					</select>

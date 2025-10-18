@@ -8,11 +8,15 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { Toaster } from '$lib/components/ui/sonner/index.js';
+	import { ModeWatcher } from 'mode-watcher';
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+<ModeWatcher />
+<Toaster />
 
 <Sidebar.Provider>
 	<AppSidebar />

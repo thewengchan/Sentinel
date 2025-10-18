@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
@@ -184,19 +185,15 @@
 									<span class="text-sm text-muted-foreground">•</span>
 									<span class="text-sm">{activity.description}</span>
 									{#if activity.status === 'safe'}
-										<span
-											class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
-										>
-											<ShieldCheckIcon class="h-3 w-3" />
+										<Badge variant="default" class="bg-green-100 text-green-700 hover:bg-green-100">
+											<ShieldCheckIcon class="mr-1 h-3 w-3" />
 											Safe
-										</span>
+										</Badge>
 									{:else if activity.status === 'flagged'}
-										<span
-											class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
-										>
-											<ShieldAlertIcon class="h-3 w-3" />
+										<Badge variant="default" class="bg-amber-100 text-amber-700 hover:bg-amber-100">
+											<ShieldAlertIcon class="mr-1 h-3 w-3" />
 											Flagged
-										</span>
+										</Badge>
 									{/if}
 								</div>
 								<p class="text-sm text-muted-foreground">{activity.details}</p>

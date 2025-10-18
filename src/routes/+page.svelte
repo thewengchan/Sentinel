@@ -1,11 +1,14 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { Progress } from '$lib/components/ui/progress/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import InfoIcon from '@lucide/svelte/icons/info';
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -13,7 +16,28 @@
 		<!-- Total Messages Card -->
 		<Card.Root>
 			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-				<Card.Title class="text-sm font-medium">Total Messages</Card.Title>
+				<div class="flex items-center gap-2">
+					<Card.Title class="text-sm font-medium">Total Messages</Card.Title>
+					<Popover.Root>
+						<Popover.Trigger>
+							<InfoIcon class="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+						</Popover.Trigger>
+						<Popover.Content class="w-80">
+							<div class="space-y-2">
+								<h4 class="leading-none font-medium">Total Messages</h4>
+								<p class="text-sm text-muted-foreground">
+									The total number of AI chat interactions across all family members. This includes
+									all conversations, questions, and responses logged in the system.
+								</p>
+								<div class="pt-2 text-xs text-muted-foreground">
+									<p>• Includes both safe and flagged content</p>
+									<p>• Updated in real-time</p>
+									<p>• Stored on blockchain for transparency</p>
+								</div>
+							</div>
+						</Popover.Content>
+					</Popover.Root>
+				</div>
 				<MessageSquareIcon class="h-4 w-4 text-muted-foreground" />
 			</Card.Header>
 			<Card.Content>
@@ -37,7 +61,30 @@
 		<!-- Flagged Messages Card -->
 		<Card.Root>
 			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-				<Card.Title class="text-sm font-medium">Flagged Messages</Card.Title>
+				<div class="flex items-center gap-2">
+					<Card.Title class="text-sm font-medium">Flagged Messages</Card.Title>
+					<Popover.Root>
+						<Popover.Trigger>
+							<InfoIcon class="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+						</Popover.Trigger>
+						<Popover.Content class="w-80">
+							<div class="space-y-2">
+								<h4 class="leading-none font-medium">Flagged Content</h4>
+								<p class="text-sm text-muted-foreground">
+									Messages that triggered safety alerts based on AI analysis. These are reviewed to
+									ensure child safety.
+								</p>
+								<div class="pt-2 text-xs text-muted-foreground">
+									<p><strong>Flag Categories:</strong></p>
+									<p>• Inappropriate content</p>
+									<p>• Privacy concerns</p>
+									<p>• Harmful information</p>
+									<p>• Misinformation</p>
+								</div>
+							</div>
+						</Popover.Content>
+					</Popover.Root>
+				</div>
 				<ShieldAlertIcon class="h-4 w-4 text-amber-600" />
 			</Card.Header>
 			<Card.Content>
@@ -127,18 +174,14 @@
 							<span class="text-muted-foreground">Safety Rate</span>
 							<span class="font-medium">95.6%</span>
 						</div>
-						<div class="mt-2 h-2 w-full rounded-full bg-secondary">
-							<div class="h-2 w-[95.6%] rounded-full bg-green-600"></div>
-						</div>
+						<Progress value={95.6} class="mt-2 [&>div]:bg-green-600" />
 					</div>
 					<div>
 						<div class="flex items-center justify-between text-sm">
 							<span class="text-muted-foreground">Monitoring Coverage</span>
 							<span class="font-medium">100%</span>
 						</div>
-						<div class="mt-2 h-2 w-full rounded-full bg-secondary">
-							<div class="h-2 w-full rounded-full bg-blue-600"></div>
-						</div>
+						<Progress value={100} class="mt-2 [&>div]:bg-blue-600" />
 					</div>
 					<div class="space-y-2 pt-4">
 						<div class="flex items-center gap-2">

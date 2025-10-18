@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import CodeIcon from '@lucide/svelte/icons/code';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
@@ -109,12 +110,10 @@
 						<div class="space-y-1">
 							<div class="flex items-center gap-2">
 								<Card.Title>{contract.name}</Card.Title>
-								<span
-									class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"
-								>
+								<Badge variant="default" class="bg-green-100 text-green-700 hover:bg-green-100">
 									{contract.status}
-								</span>
-								<span class="font-mono text-xs text-muted-foreground">{contract.version}</span>
+								</Badge>
+								<Badge variant="outline" class="font-mono text-xs">{contract.version}</Badge>
 							</div>
 							<Card.Description>{contract.description}</Card.Description>
 						</div>
