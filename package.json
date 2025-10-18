@@ -58,6 +58,7 @@
 		"@supabase/supabase-js": "^2.75.1",
 		"@txnlab/use-wallet-svelte": "^4.3.1",
 		"algosdk": "^3.5.2",
+		"lucide-svelte": "^0.546.0",
 		"openai": "^6.5.0"
 	}
 }

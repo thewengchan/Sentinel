@@ -298,7 +298,7 @@
 	}
 </script>
 
-<main class="mx-auto flex h-full w-full max-w-4xl flex-col p-4 outline-2">
+<main class="mx-auto flex h-full w-full max-w-4xl flex-col p-4">
 	<!-- Header -->
 	<div class="mb-6 flex items-center justify-between">
 		<div class="flex items-center gap-3">
