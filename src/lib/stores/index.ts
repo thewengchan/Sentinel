@@ -10,7 +10,11 @@ export { chatStore } from "./chat.store.svelte";
 export { analyticsStore } from "./analytics.store.svelte";
 
 // Re-export types
-export type { ChatMessage, ChatSession } from "./chat.store.svelte";
+export type {
+    ChatMessage,
+    ChatSession,
+    ModerationResult,
+} from "./chat.store.svelte";
 export type {
     AnalyticsEvent,
     AnalyticsEventType,

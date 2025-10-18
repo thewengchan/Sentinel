@@ -10,6 +10,7 @@ export interface ChatMessage {
     role: "user" | "assistant" | "system";
     content: string;
     timestamp: number;
+    id?: string; // Unique message ID for tracking moderation
 }
 
 export interface ChatSession {
@@ -19,12 +20,23 @@ export interface ChatSession {
     createdAt: number;
     updatedAt: number;
     messageCount: number;
+    isBlocked?: boolean; // Track if conversation is blocked
+}
+
+export interface ModerationResult {
+    allowed: boolean;
+    action: "allow" | "block";
+    reason?: string;
+    severity?: number;
+    category?: string;
+    pending?: boolean; // True while moderation in progress
 }
 
 interface ChatState {
     currentSession: ChatSession | null;
     sessions: ChatSession[];
     isLoading: boolean;
+    moderationResults: Map<string, ModerationResult>; // messageId -> result
 }
 
 class ChatStore {
@@ -32,6 +44,7 @@ class ChatStore {
         currentSession: null,
         sessions: [],
         isLoading: false,
+        moderationResults: new Map(),
     });
 
     // Getters
@@ -49,6 +62,10 @@ class ChatStore {
 
     get isLoading() {
         return this.state.isLoading;
+    }
+
+    get isBlocked() {
+        return this.state.currentSession?.isBlocked || false;
     }
 
     /**
@@ -113,10 +130,12 @@ class ChatStore {
             createdAt: Date.now(),
             updatedAt: Date.now(),
             messageCount: 0,
+            isBlocked: false,
         };
 
         this.state.sessions = [session, ...this.state.sessions];
         this.state.currentSession = session;
+        this.clearModerationResults(); // Clear moderation results for new session
         this.saveSessions();
         this.saveCurrentSessionId();
 
@@ -137,7 +156,11 @@ class ChatStore {
     /**
      * Add a message to the current session
      */
-    addMessage(role: "user" | "assistant" | "system", content: string): void {
+    addMessage(
+        role: "user" | "assistant" | "system",
+        content: string,
+        messageId?: string,
+    ): ChatMessage {
         if (!this.state.currentSession) {
             // Auto-create session if none exists
             this.createSession();
@@ -147,6 +170,7 @@ class ChatStore {
             role,
             content,
             timestamp: Date.now(),
+            id: messageId || crypto.randomUUID(),
         };
 
         if (this.state.currentSession) {
@@ -171,6 +195,8 @@ class ChatStore {
             this.updateSessionInList(this.state.currentSession);
             this.saveSessions();
         }
+
+        return message;
     }
 
     /**
@@ -276,6 +302,58 @@ class ChatStore {
      */
     get sessionCount(): number {
         return this.state.sessions.length;
+    }
+
+    /**
+     * Set moderation result for a message
+     */
+    setModerationResult(messageId: string, result: ModerationResult): void {
+        this.state.moderationResults.set(messageId, result);
+
+        // If blocked, mark session as blocked
+        if (result.action === "block" && !result.allowed) {
+            if (this.state.currentSession) {
+                this.state.currentSession.isBlocked = true;
+                this.updateSessionInList(this.state.currentSession);
+                this.saveSessions();
+            }
+        }
+    }
+
+    /**
+     * Get moderation result for a message
+     */
+    getModerationResult(messageId: string): ModerationResult | undefined {
+        return this.state.moderationResults.get(messageId);
+    }
+
+    /**
+     * Set pending moderation for a message
+     */
+    setPendingModeration(messageId: string): void {
+        this.state.moderationResults.set(messageId, {
+            allowed: true,
+            action: "allow",
+            pending: true,
+        });
+    }
+
+    /**
+     * Clear moderation results (useful when starting new session)
+     */
+    clearModerationResults(): void {
+        this.state.moderationResults.clear();
+    }
+
+    /**
+     * Unblock current session (for testing or manual override)
+     */
+    unblockSession(): void {
+        if (this.state.currentSession) {
+            this.state.currentSession.isBlocked = false;
+            this.updateSessionInList(this.state.currentSession);
+            this.saveSessions();
+        }
     }
 }
 
