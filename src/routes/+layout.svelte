@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
 
@@ -11,6 +13,37 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher } from 'mode-watcher';
 	import Wallet from '$lib/components/wallet/wallet.svelte';
+	import { chatStore, analyticsStore, userStore } from '$lib/stores';
+	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
+
+	// Initialize stores
+	onMount(() => {
+		// Initialize analytics
+		analyticsStore.init();
+
+		// Initialize chat store
+		chatStore.init();
+
+		// Load user preferences (without wallet address - will load specific prefs on wallet connect)
+		userStore.load();
+
+		const analytics = useAnalytics();
+
+		// Track initial page view
+		analytics.trackPageView(window.location.pathname);
+
+		// Track page navigation
+		const unsubscribe = page.subscribe(($page) => {
+			if ($page.url) {
+				analytics.trackPageView($page.url.pathname);
+			}
+		});
+
+		return () => {
+			unsubscribe();
+			analyticsStore.stopAutoFlush();
+		};
+	});
 </script>
 
 <svelte:head>

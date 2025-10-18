@@ -1,38 +1,118 @@
-# sv
+# Sentinel — AI Web3 Safety Platform
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+## Overview
 
-## Creating a project
+Sentinel is a **safety-focused** Web3 application that combines **AI moderation, analytics, and blockchain transparency** to create a safer, more trustworthy digital environment for children, families, and teams. It empowers parents and organisations to monitor, verify, and understand online interactions through a system that is transparent, privacy-preserving, and immutable.
 
-If you're seeing this, you've probably already done this step. Congrats!
+Built with **SvelteKit**, **Supabase**, **OpenAI**, and the **Algorand blockchain**, Sentinel bridges the gap between modern AI safety tools and verifiable Web3 integrity.
 
-```sh
-# create a new project in the current directory
-npx sv create
+---
 
-# create a new project in my-app
-npx sv create my-app
-```
+## Goals
 
-## Developing
+1. **Protect families and communities online** by automatically detecting and flagging harmful or inappropriate content.
+2. **Create transparency and accountability** using blockchain technology to record malicious activity in an immutable, tamper-proof ledger.
+3. **Empower parents and organisations** with real-time dashboards, analytics, and verifiable safety reports.
+4. **Balance transparency and privacy** by combining cryptographic hashing, secure off-chain storage, and selective on-chain commitments.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+---
 
-```sh
-npm run dev
+## Core Mechanism
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+### 1. AI Moderation
 
-## Building
+Sentinel integrates OpenAI’s Moderation API to analyse messages and content in real-time. Each chat message or activity is evaluated for potential harm such as hate speech, harassment, self-harm indicators, or explicit material.
 
-To create a production version of your app:
+* The moderation service assigns a **severity score** and **category** to each flagged event.
+* Family administrators (parents) or organisation leaders are notified through the dashboard.
+* All detected events are summarised in safety metrics (e.g., 95.6% safe interactions, flagged messages per user, category breakdowns).
 
-```sh
-npm run build
-```
+### 2. Supabase — Secure Off-Chain Storage
 
-You can preview the production build with `npm run preview`.
+Supabase provides the backbone for **user management**, **auth**, and **private data storage**.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+* **User Accounts & Roles:** Parent, child, or organisational member roles are handled via Supabase Auth.
+* **Event & Incident Logs:** All moderation events are stored securely in Postgres tables with **Row-Level Security (RLS)** enabled, ensuring each user can only access their own data.
+* **Analytics:** The family dashboard aggregates this data to visualise safety trends and behavioural insights.
+
+### 3. Algorand Blockchain — Immutable Public Proof
+
+When harmful content is detected, Sentinel records a **proof of the incident** on the Algorand blockchain. This creates an immutable, verifiable record without exposing personal information.
+
+**Stored On-Chain (Public):**
+
+* A hashed content fingerprint (not the raw text)
+* User wallet address or alias
+* Timestamp of the incident
+* Severity level & content category
+* Policy version used for moderation
+
+**Stored Off-Chain (Private):**
+
+* The actual message text or file
+* User personal information
+* Family/organisation identifiers
+
+This architecture ensures that **privacy is preserved**, yet every serious incident leaves a **tamper-proof trace** for transparency and accountability.
+
+### 4. Wallet Integration
+
+Families and users can connect their **Pera** or **Defly** Algorand wallets. This allows:
+
+* Secure on-chain identity (user-controlled keys)
+* Verifiable record ownership
+* Transparent, decentralised safety reporting
+
+For younger or non-technical users, Sentinel can also operate in **custodial mode**, where the app records incidents on behalf of the family’s main wallet.
+
+---
+
+## How It Works — Step-by-Step
+
+1. **User Interaction:** A user sends a message in the chat interface.
+2. **Moderation Check:** The backend calls OpenAI’s Moderation API.
+3. **Incident Detection:** If flagged, the incident is logged in Supabase with severity and category.
+4. **Blockchain Recording:** A lightweight transaction is sent to Algorand, storing a cryptographic hash of the content and moderation data.
+5. **Analytics Update:** The dashboard updates safety scores and provides verified on-chain links for each incident.
+6. **Parent / Admin Notification:** Parents or managers receive alerts and can review both off-chain context and on-chain proof.
+
+---
+
+## Benefits
+
+### For Families
+
+* **Peace of Mind:** Parents gain clear visibility into children’s digital interactions.
+* **Immutable Trust:** Incidents are recorded transparently on the blockchain—no one can alter or erase them.
+* **Privacy Protection:** Sensitive data stays encrypted and off-chain; only proofs are public.
+* **Education & Growth:** The dashboard helps families understand risk trends and discuss online behaviour constructively.
+
+### For Teams & Organisations
+
+* **Accountability Framework:** Teams can build verifiable moderation and conduct tracking systems.
+* **Compliance & Audit Readiness:** Blockchain-backed reports can be used for internal compliance or HR audits.
+* **Custom Policy Support:** Organisations can deploy tailored moderation models and policy versions.
+
+### For the Web3 Ecosystem
+
+* **Transparency in AI Moderation:** Sentinel introduces auditable AI behaviour to decentralised applications.
+* **Cross-App Interoperability:** Any app can plug into Sentinel’s API to benefit from verifiable moderation proofs.
+* **Reputation & Safety Layer:** Creates a decentralised trust layer that can attach to user wallets or dApps.
+
+---
+
+## Security & Privacy Design
+
+* **No raw content on-chain** — only cryptographic hashes.
+* **Encrypted off-chain storage** in Supabase with user-level access.
+* **RLS policies** to restrict visibility per user or family group.
+* **Hot wallet signing only for system proofs**; users can opt into self-signed wallet verification.
+* **Transparency commitments**: periodic privacy audits, open-source policy versioning, and public Merkle roots of moderation models.
+
+---
+
+## Vision
+
+Sentinel aims to become the **Web3 safety infrastructure** for digital families and ethical organisations — a bridge between AI’s ability to detect harm and blockchain’s ability to guarantee integrity.
+
+By giving users control, visibility, and immutable proofs, Sentinel builds **a new standard of digital trust** — where safety and transparency no longer require sacrificing privacy.

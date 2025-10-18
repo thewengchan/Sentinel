@@ -38,6 +38,7 @@
 		"prettier": "^3.6.2",
 		"prettier-plugin-svelte": "^3.4.0",
 		"prettier-plugin-tailwindcss": "^0.6.14",
+		"supabase": "^2.51.0",
 		"svelte": "^5.39.5",
 		"svelte-check": "^4.3.2",
 		"svelte-sonner": "^1.0.5",
@@ -54,6 +55,7 @@
 		"@blockshake/defly-connect": "^1.2.1",
 		"@perawallet/connect": "^1.4.2",
 		"@txnlab/use-wallet-svelte": "^4.3.1",
-		"algosdk": "^3.5.2"
+		"algosdk": "^3.5.2",
+		"openai": "^6.5.0"
 	}
 }
