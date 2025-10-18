@@ -4,8 +4,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 
-	let { children } = $props();
-
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import DynamicBreadcrumb from '$lib/components/dynamic-breadcrumb.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -16,8 +14,17 @@
 	import { chatStore, analyticsStore, userStore } from '$lib/stores';
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
 
+	let { data, children } = $props();
+	let { session, supabase } = $derived(data);
+	onMount(() => {});
+
 	// Initialize stores
 	onMount(() => {
+		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== session?.expires_at) {
+				invalidate('supabase:auth');
+			}
+		});
 		// Initialize analytics
 		analyticsStore.init();
 
@@ -40,6 +47,7 @@
 		});
 
 		return () => {
+			data.subscription.unsubscribe();
 			unsubscribe();
 			analyticsStore.stopAutoFlush();
 		};
