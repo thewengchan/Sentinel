@@ -11,7 +11,7 @@ export async function POST({ request }) {
 	const { messages }: { messages: UIMessage[] } = await request.json();
 
 	const result = streamText({
-		model: openai('gpt-4o'),
+		model: openai('o4-mini'),
 		messages: convertToModelMessages(messages)
 	});
 

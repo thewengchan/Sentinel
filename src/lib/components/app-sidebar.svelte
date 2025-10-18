@@ -11,13 +11,14 @@
 	// App data structure for AI Monitoring dApp
 	const data = {
 		user: {
-			name: 'John Doe',
-			email: 'john@example.com',
-			avatar: '/avatars/user.jpg',
+			name: 'Harry Potter',
+			email: 'harry@example.com',
+			avatar:
+				'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiNlNWU3ZWIiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIxNSIgZmlsbD0iIzljYTNhZiIvPjxwYXRoIGQ9Ik0yMCA4MCBRMjAgNjUgMzUgNjUgTDY1IDY1IFE4MCA2NSA4MCA4MCBMODAgMTAwIEwyMCAxMDAgWiIgZmlsbD0iIzljYTNhZiIvPjwvc3ZnPg==',
 			role: 'parent' // "parent" (admin for family), "child" (member), or "admin" (system admin)
 		},
 		family: {
-			name: 'Doe Family',
+			name: 'Dumbledore Family',
 			logo: GalleryVerticalEndIcon,
 			plan: 'Premium' // "Free", "Basic", "Premium"
 		},
@@ -26,18 +27,12 @@
 				title: 'Dashboard',
 				url: '/',
 				icon: LayoutDashboardIcon,
-				isActive: true,
+				isActive: true
 			},
 			{
 				title: 'Chat',
 				url: '/chat',
-				icon: MessageSquareIcon,
-				items: [
-					{
-						title: 'ChatGPT',
-						url: '/chat'
-					}
-				]
+				icon: MessageSquareIcon
 			},
 			{
 				title: 'Monitoring',

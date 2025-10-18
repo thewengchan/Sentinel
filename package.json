@@ -51,6 +51,9 @@
 		"zod": "^4.1.12"
 	},
 	"dependencies": {
-		"@txnlab/use-wallet-svelte": "^4.3.1"
+		"@blockshake/defly-connect": "^1.2.1",
+		"@perawallet/connect": "^1.4.2",
+		"@txnlab/use-wallet-svelte": "^4.3.1",
+		"algosdk": "^3.5.2"
 	}
 }

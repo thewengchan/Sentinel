@@ -12,6 +12,41 @@
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2';
+	import { browser } from '$app/environment';
+
+	import { useWallet, type Wallet } from '@txnlab/use-wallet-svelte';
+	import { onMount } from 'svelte';
+
+	// Only initialize wallet on client side to prevent hydration mismatch
+	let wallets: Wallet[] = $state([]);
+	let activeWalletData: Wallet | null = $state(null);
+	let connecting = $state(false);
+
+	// Initialize wallet state on client side only
+	onMount(() => {
+		const { wallets: walletList, activeWallet } = useWallet();
+		wallets = walletList;
+		// Use a reactive statement instead of $derived in conditional
+		$effect(() => {
+			activeWalletData = activeWallet() || null;
+		});
+	});
+
+	const handleConnect = async (wallet: Wallet) => {
+		connecting = true;
+		try {
+			await wallet.connect();
+		} catch (error) {
+			console.error('Failed to connect:', error);
+		} finally {
+			connecting = false;
+		}
+	};
+
+	const setActiveAccount = (event: Event, wallet: Wallet) => {
+		const selectElement = event.target as HTMLSelectElement;
+		wallet.setActiveAccount(selectElement.value);
+	};
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -20,10 +55,12 @@
 			<h1 class="text-3xl font-bold tracking-tight">Wallet</h1>
 			<p class="text-muted-foreground">Connect and manage your blockchain wallet</p>
 		</div>
-		<Button>
-			<WalletIcon class="mr-2 h-4 w-4" />
-			Connect Wallet
-		</Button>
+		{#if !activeWalletData}
+			<Button onclick={() => {}}>
+				<WalletIcon class="mr-2 h-4 w-4" />
+				Connect Wallet
+			</Button>
+		{/if}
 	</div>
 
 	<!-- Wallet Status -->
@@ -33,23 +70,128 @@
 			<Card.Description>Your connected wallet information</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<div class="space-y-4">
-				<div class="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
-					<div class="space-y-1">
-						<p class="text-sm font-medium text-muted-foreground">Wallet Address</p>
-						<div class="flex items-center gap-2">
-							<code class="font-mono text-sm">0x742d...5f8a</code>
-							<Button variant="ghost" size="sm">
-								<CopyIcon class="h-3 w-3" />
-							</Button>
+			{#if browser}
+				{#if activeWalletData}
+					<div class="space-y-4">
+						<!-- Wallet Info -->
+						<div class="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
+							<div class="flex items-center gap-3">
+								<img
+									src={activeWalletData.metadata.icon}
+									alt={activeWalletData.metadata.name}
+									width="32"
+									height="32"
+									class="rounded"
+								/>
+								<div class="space-y-1">
+									<p class="text-sm font-medium">{activeWalletData.metadata.name}</p>
+									{#if activeWalletData.accounts?.current?.[0]}
+										<div class="flex items-center gap-2">
+											<code class="font-mono text-xs">
+												{activeWalletData.accounts?.current?.[0]?.address
+													? `${activeWalletData.accounts.current[0].address.slice(0, 6)}...${activeWalletData.accounts.current[0].address.slice(-4)}`
+													: 'No address'}
+											</code>
+											<Button
+												variant="ghost"
+												size="sm"
+												onclick={() =>
+													navigator.clipboard.writeText(
+														activeWalletData?.accounts?.current?.[0]?.address || ''
+													)}
+											>
+												<CopyIcon class="h-3 w-3" />
+											</Button>
+										</div>
+									{/if}
+								</div>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="h-2 w-2 animate-pulse rounded-full bg-green-600"></div>
+								<span class="text-sm font-medium">Connected</span>
+							</div>
+						</div>
+
+						<!-- Account Selection -->
+						{#if activeWalletData.accounts?.current && activeWalletData.accounts.current.length > 1}
+							<div class="space-y-2">
+								<Label for="account-select">Select Account</Label>
+								<select
+									id="account-select"
+									class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+									value={activeWalletData?.accounts?.current?.[0]?.address}
+									onchange={(event) =>
+										activeWalletData && setActiveAccount(event, activeWalletData)}
+								>
+									{#each activeWalletData.accounts.current as account}
+										<option value={account.address}>
+											{account.name} ({account.address.slice(0, 6)}...{account.address.slice(-4)})
+										</option>
+									{/each}
+								</select>
+							</div>
+						{/if}
+
+						<!-- Disconnect Button -->
+						<Button variant="outline" onclick={() => activeWalletData?.disconnect()} class="w-full">
+							Disconnect Wallet
+						</Button>
+					</div>
+				{:else}
+					<div class="space-y-4">
+						<div class="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
+							<div class="space-y-1">
+								<p class="text-sm font-medium text-muted-foreground">No wallet connected</p>
+								<p class="text-xs text-muted-foreground">
+									Connect a wallet to view your information
+								</p>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="h-2 w-2 rounded-full bg-gray-400"></div>
+								<span class="text-sm font-medium text-muted-foreground">Disconnected</span>
+							</div>
+						</div>
+
+						<!-- Wallet Options -->
+						<div class="space-y-2">
+							<Label>Available Wallets</Label>
+							<div class="grid gap-2">
+								{#each wallets as wallet}
+									<Button
+										variant="outline"
+										onclick={() => handleConnect(wallet)}
+										disabled={connecting}
+										class="justify-start"
+									>
+										<img
+											src={wallet.metadata.icon}
+											alt={wallet.metadata.name}
+											width="20"
+											height="20"
+											class="mr-2"
+										/>
+										{wallet.metadata.name}
+									</Button>
+								{/each}
+							</div>
 						</div>
 					</div>
-					<div class="flex items-center gap-2">
-						<div class="h-2 w-2 animate-pulse rounded-full bg-green-600"></div>
-						<span class="text-sm font-medium">Connected</span>
+				{/if}
+			{:else}
+				<!-- Server-side fallback -->
+				<div class="space-y-4">
+					<div class="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
+						<div class="space-y-1">
+							<p class="text-sm font-medium text-muted-foreground">Loading wallet...</p>
+							<p class="text-xs text-muted-foreground">Initializing wallet connection</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<div class="h-2 w-2 rounded-full bg-gray-400"></div>
+							<span class="text-sm font-medium text-muted-foreground">Loading</span>
+						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 
@@ -189,7 +331,11 @@
 							<div class="space-y-3 rounded-lg border p-4">
 								<div class="flex items-center justify-between">
 									<span class="text-sm text-muted-foreground">From</span>
-									<code class="text-sm font-medium">0x742d...5f8a</code>
+									<code class="text-sm font-medium">
+										{browser && activeWalletData?.accounts?.current?.[0]?.address
+											? `${activeWalletData.accounts.current[0].address.slice(0, 6)}...${activeWalletData.accounts.current[0].address.slice(-4)}`
+											: '0x742d...5f8a'}
+									</code>
 								</div>
 								<div class="flex items-center justify-between">
 									<span class="text-sm text-muted-foreground">To</span>
