@@ -162,7 +162,7 @@
 				<img
 					src="/sentinel-logo.jpeg"
 					alt="Sentinel Logo"
-					class="absolute inset-0 h-full w-full object-cover"
+					class="absolute inset-0 h-full w-full object-contain"
 				/>
 			</div>
 		</Card.Content>
