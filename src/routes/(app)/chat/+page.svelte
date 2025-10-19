@@ -409,7 +409,7 @@
 	<Separator class="mb-6" />
 
 	<!-- Blocked Alert -->
-	{#if !walletStore.isConnected || !walletStore.isContextSet}
+	{#if !walletStore.isConnected}
 		<Alert.Root variant="default" class="mb-4">
 			<ShieldAlertIcon class="h-4 w-4" />
 			<Alert.Title>Connect Wallet to Chat</Alert.Title>
@@ -493,19 +493,18 @@
 		<form onsubmit={handleSubmit} class="flex gap-3">
 			<Input
 				bind:value={input}
-				placeholder={!walletStore.isConnected || !walletStore.isContextSet
+				placeholder={!walletStore.isConnected
 					? 'Connect wallet to chat...'
 					: chatStore.isBlocked
 						? 'Conversation blocked - start a new chat'
 						: 'Type your message...'}
 				class="flex-1"
-				disabled={!walletStore.isConnected || !walletStore.isContextSet || chatStore.isBlocked}
+				disabled={!walletStore.isConnected || chatStore.isBlocked}
 			/>
 			<Button
 				type="submit"
 				disabled={!input.trim() ||
 					!walletStore.isConnected ||
-					!walletStore.isContextSet ||
 					chatStore.isBlocked}
 				class="shrink-0"
 			>

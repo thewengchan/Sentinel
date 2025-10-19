@@ -71,7 +71,7 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
             const { data: userData, error } = await supabase
                 .from("users")
                 .select("wallet_address, email, full_name, avatar_url")
-                .eq("auth_user_id", user.id)
+                .eq("id", user.id)
                 .single();
 
             if (!error && userData) {

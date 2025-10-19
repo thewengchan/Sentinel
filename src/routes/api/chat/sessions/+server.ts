@@ -77,7 +77,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const { data: user, error: userError } = await supabase
             .from("users")
             .select("wallet_address")
-            .eq("auth_user_id", locals.user.id)
+            .eq("id", locals.user.id)
             .single();
 
         if (userError) {
@@ -93,7 +93,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             .from("chat_sessions")
             .insert({
                 user_id: locals.user.id,
-                wallet_address: user.wallet_address,
+                wallet_address: user.wallet_address || "",
                 title,
                 message_count: 0,
             })

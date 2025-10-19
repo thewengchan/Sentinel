@@ -44,6 +44,10 @@
 						url: '/logs'
 					},
 					{
+						title: 'Incidents',
+						url: '/incidents'
+					},
+					{
 						title: 'Analytics',
 						url: '/analytics'
 					}
@@ -140,7 +144,9 @@
 		{/if}
 	</Sidebar.Content>
 	<Sidebar.Footer>
-		<NavUser user={data.user} />
+		{@const user = data.user}
+		<!-- eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -->
+		<NavUser {user} />
 	</Sidebar.Footer>
 	<Sidebar.Rail />
 </Sidebar.Root>

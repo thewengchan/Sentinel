@@ -1,10 +1,73 @@
 # Sentinel — AI Web3 Safety Platform
 
-## Overview
+## Short Summary
 
-Sentinel is a **safety-focused** Web3 application that combines **AI moderation, analytics, and blockchain transparency** to create a safer, more trustworthy digital environment for children, families, and teams. It empowers parents and organisations to monitor, verify, and understand online interactions through a system that is transparent, privacy-preserving, and immutable.
+AI-powered Web3 safety platform using Algorand blockchain to create immutable records of harmful content incidents for family and organizational protection.
 
-Built with **SvelteKit**, **Supabase**, **OpenAI**, and the **Algorand blockchain**, Sentinel bridges the gap between modern AI safety tools and verifiable Web3 integrity.
+## Full Description
+
+Sentinel addresses the critical problem of **digital safety and accountability** in Web3 environments by creating a transparent, immutable system for recording and verifying harmful content incidents. The platform solves three key problems:
+
+1. **Lack of Transparency in AI Moderation**: Current AI moderation systems operate as "black boxes" with no verifiable record of decisions or incidents.
+
+2. **Privacy vs. Accountability Trade-off**: Traditional systems either expose sensitive content publicly or keep everything private, making verification impossible.
+
+3. **Fragmented Safety Data**: Family and organizational safety data is scattered across platforms with no unified, verifiable record.
+
+**How Algorand Enables the Solution:**
+
+Sentinel leverages Algorand's unique features to create a revolutionary safety infrastructure:
+
+- **Box Storage**: Uses Algorand's Box Storage feature to efficiently store incident records with dynamic sizing, allowing for scalable incident management without bloating the blockchain.
+
+- **ARC4 ABI**: Implements the ARC4 ABI standard for type-safe smart contract interactions, ensuring reliable data encoding/decoding of complex incident structures.
+
+- **Low-Cost Transactions**: Algorand's minimal transaction fees make it economically viable to record every safety incident on-chain, creating comprehensive audit trails.
+
+- **Fast Finality**: Near-instant transaction finality ensures real-time safety incident recording and immediate verification capabilities.
+
+- **Pure Proof-of-Stake**: Algorand's secure consensus mechanism provides the trustless, decentralized foundation needed for verifiable safety records.
+
+The platform creates a **hybrid architecture** where sensitive content remains private (stored in Supabase with encryption), while cryptographic proofs and incident metadata are recorded immutably on Algorand. This enables families and organizations to maintain privacy while having verifiable, tamper-proof records of safety incidents.
+
+## Technical Description
+
+**SDKs and Technologies Used:**
+
+- **Algorand Python SDK (algopy)**: For smart contract development using the latest ARC4 ABI standard
+- **Algorand JavaScript SDK**: For frontend wallet integration and transaction signing
+- **SvelteKit**: Modern web framework for the user interface
+- **Supabase**: Backend-as-a-Service for authentication, database, and real-time features
+- **OpenAI Moderation API**: AI-powered content analysis and classification
+
+**Unique Algorand Features That Made This Possible:**
+
+1. **Box Storage with Dynamic Sizing**: Unlike traditional blockchain storage, Algorand's Box Storage allows our smart contract to store variable-sized incident records efficiently. Each incident is stored in its own box with a unique key, enabling O(1) lookups and scalable storage.
+
+2. **ARC4 ABI Type Safety**: The ARC4 ABI standard provides compile-time type checking and automatic serialization/deserialization of complex data structures. This ensures data integrity when storing and retrieving incident records.
+
+3. **Low Transaction Costs**: Algorand's minimal fees (typically <$0.001 per transaction) make it economically feasible to record every safety incident on-chain, creating comprehensive audit trails that would be prohibitively expensive on other blockchains.
+
+4. **Fast Finality**: Algorand's 4-second finality ensures that safety incidents are recorded and verified in near real-time, critical for family safety applications.
+
+5. **Pure Proof-of-Stake Security**: Algorand's secure consensus provides the trustless foundation needed for verifiable safety records without the environmental concerns of proof-of-work systems.
+
+**Smart Contract Architecture:**
+
+The `SentinelModeration` smart contract uses a sophisticated incident recording system:
+
+- **IncidentRecord Struct**: Stores comprehensive incident data including content hashes, severity levels, and policy versions
+- **Box-based Storage**: Each incident gets its own storage box for efficient retrieval and management
+- **Batch Operations**: Support for recording multiple incidents in a single transaction for efficiency
+- **Verification Methods**: Cryptographic verification of incident authenticity and content integrity
+
+This architecture would not be possible on traditional blockchains due to storage limitations, high costs, or lack of type safety features.
+
+## Presentation
+
+**Canva Presentation Link:** [PLACEHOLDER - Link to Canva presentation slides](https://canva.com/placeholder)
+
+_Note: Presentation includes slides on team, problem statement, solution architecture, Algorand integration, and demo walkthrough._
 
 ---
 
@@ -180,3 +243,114 @@ SUPABASE_ANON_KEY=your_supabase_anon_key_here
 Sentinel aims to become the **Web3 safety infrastructure** for digital families and ethical organisations — a bridge between AI’s ability to detect harm and blockchain’s ability to guarantee integrity.
 
 By giving users control, visibility, and immutable proofs, Sentinel builds **a new standard of digital trust** — where safety and transparency no longer require sacrificing privacy.
+
+---
+
+## Project Demo & Documentation
+
+### Demo Video
+
+[PLACEHOLDER - Link to demo video showing the application in action]
+
+_This video demonstrates the complete user flow from chat interaction to incident detection and blockchain recording._
+
+### Screenshots
+
+#### Dashboard Overview
+
+![PLACEHOLDER - Dashboard Screenshot](screenshots/dashboard.png)
+
+#### Chat Interface with Moderation
+
+![PLACEHOLDER - Chat Interface Screenshot](screenshots/chat-interface.png)
+
+#### Incident Analytics
+
+![PLACEHOLDER - Analytics Screenshot](screenshots/analytics.png)
+
+#### Wallet Integration
+
+![PLACEHOLDER - Wallet Connection Screenshot](screenshots/wallet-integration.png)
+
+### Smart Contract Description
+
+The `SentinelModeration` smart contract (`contract.py`) implements a sophisticated incident recording system using Algorand's advanced features:
+
+#### Core Functionality
+
+**1. Incident Recording (`record_incident`)**
+
+- Records moderation incidents with comprehensive metadata
+- Validates severity levels (1-3 scale)
+- Ensures unique incident IDs using Box Storage
+- Stores structured data using ARC4 types for type safety
+- Updates global incident counter
+- Logs incident ID and content hash for transparency
+
+**2. Data Structure (`IncidentRecord`)**
+
+```python
+class IncidentRecord(Struct):
+    incident_id: ARC4String      # Unique identifier
+    wallet_address: Address      # Offending user's wallet
+    timestamp: UInt64           # Unix timestamp
+    content_hash: DynamicBytes  # SHA-256 hash of content
+    severity_level: UInt8       # 1=low, 2=medium, 3=high
+    category: ARC4String        # Violation category
+    policy_version: ARC4String  # Moderation policy version
+    action_taken: ARC4String    # Action taken (warned, blocked, etc.)
+```
+
+**3. Box Storage Implementation**
+
+- Each incident stored in its own Box with unique key (`inc_" + incident_id`)
+- Dynamic box sizing based on incident data size
+- Safety cap of 2048 bytes per incident
+- O(1) lookup time for incident retrieval
+
+**4. Verification Methods**
+
+- `get_incident`: Retrieves complete incident record
+- `verify_incident`: Cryptographically verifies incident authenticity
+- `get_contract_info`: Returns contract version and total incident count
+
+**5. Batch Operations**
+
+- `batch_record_incidents`: Placeholder for efficient bulk incident recording
+- Designed for high-volume, low-severity incidents
+
+#### Key Algorand Features Utilized
+
+1. **Box Storage**: Enables efficient, scalable storage of variable-sized incident records
+2. **ARC4 ABI**: Provides type-safe serialization/deserialization of complex data structures
+3. **Dynamic Bytes**: Supports variable-length content hashes and metadata
+4. **Address Types**: Native support for Algorand wallet addresses
+5. **Global State**: Maintains contract-level counters and versioning
+
+#### Security Features
+
+- **Content Hashing**: Only cryptographic hashes stored on-chain, never raw content
+- **Unique ID Enforcement**: Prevents duplicate incident recording
+- **Severity Validation**: Ensures severity levels are within acceptable range
+- **Size Limits**: Prevents storage abuse with safety caps
+- **Immutable Records**: Once recorded, incidents cannot be modified or deleted
+
+### Comprehensive Project Explanation Video
+
+[PLACEHOLDER - Link to comprehensive Loom-style video explaining the project]
+
+_This video will include:_
+
+- _Complete project walkthrough and architecture explanation_
+- _GitHub repository structure and code organization_
+- _Smart contract deployment and interaction demonstration_
+- _Full user flow from chat to blockchain recording_
+- _Technical implementation details and Algorand integration_
+- _How the project satisfies the custom smart contract requirement_
+
+### Block Explorer Link
+
+**Deployed Smart Contract on Algorand Asset Hub:**
+[PLACEHOLDER - Link to block explorer showing deployed contract](https://testnet.algoexplorer.io/application/PLACEHOLDER_APP_ID)
+
+_Note: Contract will be deployed to Algorand testnet with full functionality demonstrated in the demo video._

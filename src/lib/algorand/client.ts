@@ -112,6 +112,24 @@ export class AlgorandClient {
                 const paymentTxn = tx.paymentTransaction;
                 const assetTransferTxn = tx.assetTransferTransaction;
 
+                // Safely decode note field with error handling
+                let decodedNote: string | undefined;
+                if (tx.note) {
+                    try {
+                        // Try to decode as base64
+                        decodedNote = atob(String(tx.note));
+                    } catch (error) {
+                        // If decoding fails, check if it's already a string
+                        // or contains invalid base64 characters
+                        console.warn(
+                            `Failed to decode transaction note for tx ${tx.id}:`,
+                            error,
+                        );
+                        // Keep the original value if decoding fails
+                        decodedNote = String(tx.note);
+                    }
+                }
+
                 return {
                     id: String(tx.id || ""),
                     sender: String(tx.sender || ""),
@@ -135,7 +153,7 @@ export class AlgorandClient {
                         | "appl",
                     roundTime: Number(tx.roundTime || 0),
                     confirmedRound: Number(tx.confirmedRound || 0),
-                    note: tx.note ? atob(String(tx.note)) : undefined,
+                    note: decodedNote,
                     assetId: Number(assetTransferTxn?.assetId || 0),
                 };
             });
@@ -298,8 +316,9 @@ export class AlgorandClient {
     }): Promise<{ txId: string; success: boolean; error?: string }> {
         try {
             // Define the ABI method for the smart contract
+            // Must match the contract's @abimethod name and signature exactly
             const method = new ABIMethod({
-                name: "submit_incident",
+                name: "record_incident",
                 args: [
                     { name: "incident_id", type: "string" },
                     { name: "wallet_address", type: "address" },
@@ -309,8 +328,13 @@ export class AlgorandClient {
                     { name: "policy_version", type: "string" },
                     { name: "action_taken", type: "string" },
                 ],
-                returns: { type: "void" },
+                returns: { type: "string" },
             });
+
+            // Create box reference for this incident
+            const incidentKey = new TextEncoder().encode(
+                `inc_${params.incidentId}`,
+            );
 
             // Call the smart contract method
             const result = await this.client.send.appCallMethodCall({
@@ -325,6 +349,12 @@ export class AlgorandClient {
                     params.category,
                     params.policyVersion,
                     params.actionTaken,
+                ],
+                boxReferences: [
+                    {
+                        appId: BigInt(params.appId),
+                        name: incidentKey,
+                    },
                 ],
             });
 

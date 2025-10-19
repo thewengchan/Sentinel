@@ -238,7 +238,6 @@ export type Database = {
       }
       users: {
         Row: {
-          auth_user_id: string | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -249,18 +248,16 @@ export type Database = {
           wallet_address: string | null
         }
         Insert: {
-          auth_user_id?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
-          id?: string
+          id: string
           last_seen?: string | null
           metadata?: Json | null
           wallet_address?: string | null
         }
         Update: {
-          auth_user_id?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -284,7 +281,6 @@ export type Database = {
       connect_wallet_to_user: {
         Args: { wallet_addr: string }
         Returns: {
-          auth_user_id: string | null
           avatar_url: string | null
           created_at: string | null
           email: string | null

@@ -38,9 +38,12 @@ export async function createIncident(
     const encoder = new TextEncoder();
     const dataBuffer = encoder.encode(data.content);
     const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
-    const contentHash = Array.from(new Uint8Array(hashBuffer)).map((b) =>
-        b.toString(16).padStart(2, "0")
-    ).join("");
+
+    // Convert hash to hex string with '\\x' prefix for PostgreSQL bytea
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    const contentHashBytea = `\\x${hashHex}`;
 
     const { data: incident, error } = await supabase
         .from("incidents")
@@ -49,7 +52,7 @@ export async function createIncident(
             message_id: data.message_id,
             from_side: data.from_side,
             wallet_address: data.wallet_address,
-            content_hash: contentHash,
+            content_hash: contentHashBytea,
             severity: data.severity,
             category: data.category,
             policy_version: data.policy_version,
@@ -60,8 +63,47 @@ export async function createIncident(
         .single();
 
     if (error) {
+        // Check if it's a duplicate key error (idempotency)
+        if (error.code === "23505" || error.message.includes("duplicate key")) {
+            // Fetch existing incident
+            const { data: existing, error: fetchError } = await supabase
+                .from("incidents")
+                .select("id, chain_status, tx_id")
+                .eq("session_id", data.session_id)
+                .eq("message_id", data.message_id)
+                .single();
+
+            if (fetchError) {
+                throw new Error(
+                    `Failed to fetch existing incident: ${fetchError.message}`,
+                );
+            }
+
+            console.log(
+                `   ℹ️  Duplicate incident detected, returning existing: ${
+                    existing.id.slice(0, 8)
+                }...`,
+            );
+
+            return {
+                id: existing.id,
+                chain_status: existing.chain_status as
+                    | "pending"
+                    | "submitted"
+                    | "confirmed"
+                    | "failed",
+                tx_id: existing.tx_id || undefined,
+            };
+        }
+
         throw new Error(`Failed to create incident: ${error.message}`);
     }
+
+    console.log(
+        `   ✅ Incident created: ${
+            incident.id.slice(0, 8)
+        }... | severity:${data.severity} | category:${data.category}`,
+    );
 
     return {
         id: incident.id,
@@ -96,6 +138,13 @@ export async function updateIncidentStatus(
     if (error) {
         throw new Error(`Failed to update incident status: ${error.message}`);
     }
+
+    const txInfo = txId ? ` | tx:${txId.slice(0, 8)}...` : "";
+    console.log(
+        `   📝 Incident ${
+            incidentId.slice(0, 8)
+        }... status updated: ${status}${txInfo}`,
+    );
 }
 
 /**

@@ -15,8 +15,6 @@ type ModResult = {
 };
 
 export async function moderate(text: string): Promise<ModResult> {
-    console.log("🤖 Calling OpenAI Moderation API...");
-
     const res = await openai.moderations.create({
         model: "omni-moderation-latest",
         input: text,
@@ -24,13 +22,6 @@ export async function moderate(text: string): Promise<ModResult> {
 
     // Map OpenAI categories → your category + severity
     const r = res.results?.[0];
-
-    // Log raw OpenAI response
-    console.log("📊 OpenAI Moderation Response:", {
-        flagged: r?.flagged,
-        categories: r?.categories,
-        categoryScores: r?.category_scores,
-    });
 
     if (!r) return { flagged: false, category: "unknown", severity: 0 };
 
@@ -70,6 +61,5 @@ export async function moderate(text: string): Promise<ModResult> {
         mappedResult = { flagged: false, category: "clean", severity: 0 };
     }
 
-    console.log("✅ Mapped Result:", mappedResult);
     return mappedResult;
 }

@@ -46,19 +46,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const supabase = getSupabaseClient(locals);
 
         // Get current wallet address from context
-        const { data: walletAddress, error: contextError } = await supabase.rpc(
-            "get_current_wallet_address",
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: walletData, error: contextError } =
+            await (supabase.rpc as any)(
+                "get_current_wallet_address",
+            );
 
-        if (contextError || !walletAddress) {
+        if (contextError || !walletData) {
             return json({
                 success: false,
                 error: "Wallet context not set",
             }, { status: 401 });
         }
 
+        // Extract wallet address string (handle both string and object responses)
+        const walletAddress = typeof walletData === "string"
+            ? walletData
+            : (walletData as { wallet_address?: string })?.wallet_address;
+
+        if (!walletAddress) {
+            return json({
+                success: false,
+                error: "Wallet address not found",
+            }, { status: 401 });
+        }
+
         // Verify session belongs to user
-        const { data: session, error: sessionError } = await supabase
+        const { error: sessionError } = await supabase
             .from("chat_sessions")
             .select("id")
             .eq("id", session_id)
@@ -89,7 +103,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const result = await createIncident(supabase, incidentData);
 
         // If severity >= 2, trigger blockchain submission (fire-and-forget)
-        if (severity >= 2) {
+        if (severity >= 1) {
             // Don't await this - let it run in background
             fetch("/api/incidents/submit-chain", {
                 method: "POST",
