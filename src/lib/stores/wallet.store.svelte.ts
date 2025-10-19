@@ -18,6 +18,8 @@ interface WalletState {
     activeAccount: WalletAccount | null;
     network: "testnet" | "mainnet" | null;
     error: string | null;
+    // Auth integration
+    isConnectingToAuth: boolean;
 }
 
 class WalletStore {
@@ -29,6 +31,8 @@ class WalletStore {
         activeAccount: null,
         network: null,
         error: null,
+        // Auth integration
+        isConnectingToAuth: false,
     });
 
     // Getters using $derived
@@ -70,6 +74,10 @@ class WalletStore {
 
     get walletIcon() {
         return this.state.wallet?.metadata.icon || null;
+    }
+
+    get isConnectingToAuth() {
+        return this.state.isConnectingToAuth;
     }
 
     /**
@@ -131,6 +139,48 @@ class WalletStore {
     }
 
     /**
+     * Connect wallet to authenticated user
+     */
+    async connectWallet(walletAddress: string): Promise<boolean> {
+        if (!walletAddress) {
+            this.state.error = "Wallet address is required";
+            return false;
+        }
+
+        this.state.isConnectingToAuth = true;
+        this.state.error = null;
+
+        try {
+            const response = await fetch("/api/auth/connect-wallet", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    wallet_address: walletAddress,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Failed to connect wallet");
+            }
+
+            this.state.error = null;
+            return true;
+        } catch (error) {
+            console.error("Failed to connect wallet:", error);
+            this.state.error = error instanceof Error
+                ? error.message
+                : "Failed to connect wallet";
+            return false;
+        } finally {
+            this.state.isConnectingToAuth = false;
+        }
+    }
+
+    /**
      * Disconnect wallet and clear state
      */
     disconnect() {
@@ -139,6 +189,7 @@ class WalletStore {
         this.state.accounts = [];
         this.state.activeAccount = null;
         this.state.error = null;
+        this.state.isConnectingToAuth = false;
     }
 
     /**
@@ -153,6 +204,8 @@ class WalletStore {
             activeAccount: null,
             network: null,
             error: null,
+            // Auth integration
+            isConnectingToAuth: false,
         };
     }
 }

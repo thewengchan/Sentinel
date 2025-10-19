@@ -14,7 +14,7 @@
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
 	import { Chat } from '@ai-sdk/svelte';
-	import { chatStore, type ModerationResult } from '$lib/stores';
+	import { chatStore, walletStore, type ModerationResult } from '$lib/stores';
 	import { userStore } from '$lib/stores';
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
 	import { toast } from 'svelte-sonner';
@@ -91,7 +91,7 @@
 
 	onMount(() => {
 		chat = new Chat({
-			onFinish: ({ message }) => {
+			onFinish: async ({ message }) => {
 				// Called when AI message streaming completes
 				// Now we can moderate the complete response
 				const completeMessage = chatStore.fromUIMessage(message);
@@ -105,14 +105,14 @@
 					let messageToModerate;
 					if (existingIndex === -1) {
 						// Message not in store yet, add it
-						messageToModerate = chatStore.addMessage('assistant', completeMessage.content);
+						messageToModerate = await chatStore.addMessage('assistant', completeMessage.content);
 					} else {
 						// Message already in store, get its ID
 						messageToModerate = chatStore.currentMessages[existingIndex];
 					}
 
 					// Moderate the complete AI response
-					if (messageToModerate.id) {
+					if (messageToModerate?.id) {
 						moderateMessage(messageToModerate.id, completeMessage.content, 'ai');
 					}
 				}
@@ -127,7 +127,9 @@
 
 		// Watch for user messages only (immediate moderation)
 		let lastProcessedIndex = 0;
-		$effect(() => {
+
+		// Separate async function to process new messages
+		async function processNewMessages() {
 			if (chat && chat.messages.length > lastProcessedIndex) {
 				// Process new messages
 				for (let i = lastProcessedIndex; i < chat.messages.length; i++) {
@@ -143,10 +145,13 @@
 
 							// Only add and moderate if there's actual content
 							if (newMessage.content && newMessage.content.trim().length > 0) {
-								const addedMessage = chatStore.addMessage(newMessage.role, newMessage.content);
+								const addedMessage = await chatStore.addMessage(
+									newMessage.role,
+									newMessage.content
+								);
 
 								// Moderate user message immediately
-								if (addedMessage.id) {
+								if (addedMessage?.id) {
 									moderateMessage(addedMessage.id, addedMessage.content, 'user');
 								}
 							}
@@ -154,6 +159,13 @@
 					}
 				}
 				lastProcessedIndex = chat.messages.length;
+			}
+		}
+
+		// Effect to trigger async processing when messages change
+		$effect(() => {
+			if (chat && chat.messages.length > lastProcessedIndex) {
+				processNewMessages();
 			}
 		});
 
@@ -165,12 +177,12 @@
 		});
 	});
 
-	function handleSubmit(event: SubmitEvent) {
+	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (input.trim() && chat && !chatStore.isBlocked) {
 			// Create a new session if none exists
 			if (!chatStore.currentSession) {
-				chatStore.createSession();
+				await chatStore.createSession();
 				analytics.trackChatSessionCreated();
 			}
 
@@ -180,26 +192,26 @@
 		}
 	}
 
-	function handleNewChat() {
+	async function handleNewChat() {
 		if (chat) {
 			chat.messages = [];
 		}
-		chatStore.createSession();
+		await chatStore.createSession();
 		analytics.trackChatSessionCreated();
 		toast.success('New conversation started');
 	}
 
-	function handleLoadSession(sessionId: string) {
-		chatStore.loadSession(sessionId);
+	async function handleLoadSession(sessionId: string) {
+		await chatStore.loadSession(sessionId);
 		if (chat && chatStore.currentSession) {
 			chat.messages = chatStore.toUIMessages(chatStore.currentMessages);
 			toast.success('Session loaded');
 		}
 	}
 
-	function handleDeleteSession(sessionId: string, event: Event) {
+	async function handleDeleteSession(sessionId: string, event: Event) {
 		event.stopPropagation();
-		chatStore.deleteSession(sessionId);
+		await chatStore.deleteSession(sessionId);
 		if (chat && chatStore.currentSession) {
 			chat.messages = chatStore.toUIMessages(chatStore.currentMessages);
 		}
@@ -397,6 +409,16 @@
 	<Separator class="mb-6" />
 
 	<!-- Blocked Alert -->
+	{#if !walletStore.isConnected || !walletStore.isContextSet}
+		<Alert.Root variant="default" class="mb-4">
+			<ShieldAlertIcon class="h-4 w-4" />
+			<Alert.Title>Connect Wallet to Chat</Alert.Title>
+			<Alert.Description>
+				Please connect your wallet to start chatting. Your conversations will be saved securely.
+			</Alert.Description>
+		</Alert.Root>
+	{/if}
+
 	{#if chatStore.isBlocked}
 		<Alert.Root variant="destructive" class="mb-4">
 			<ShieldAlertIcon class="h-4 w-4" />
@@ -471,13 +493,22 @@
 		<form onsubmit={handleSubmit} class="flex gap-3">
 			<Input
 				bind:value={input}
-				placeholder={chatStore.isBlocked
-					? 'Conversation blocked - start a new chat'
-					: 'Type your message...'}
+				placeholder={!walletStore.isConnected || !walletStore.isContextSet
+					? 'Connect wallet to chat...'
+					: chatStore.isBlocked
+						? 'Conversation blocked - start a new chat'
+						: 'Type your message...'}
 				class="flex-1"
-				disabled={chatStore.isBlocked}
+				disabled={!walletStore.isConnected || !walletStore.isContextSet || chatStore.isBlocked}
 			/>
-			<Button type="submit" disabled={!input.trim() || chatStore.isBlocked} class="shrink-0">
+			<Button
+				type="submit"
+				disabled={!input.trim() ||
+					!walletStore.isConnected ||
+					!walletStore.isContextSet ||
+					chatStore.isBlocked}
+				class="shrink-0"
+			>
 				<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M22 2L11 13" />
 					<path d="M22 2L15 22L11 13L2 9L22 2Z" />

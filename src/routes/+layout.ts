@@ -7,6 +7,8 @@ import {
     PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     PUBLIC_SUPABASE_URL,
 } from "$env/static/public";
+import { authStore } from "$lib/stores/auth.store.svelte.js";
+import { userStore } from "$lib/stores/user.store.svelte.js";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async ({ data, depends, fetch }) => {
@@ -53,6 +55,36 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
     const {
         data: { user },
     } = await supabase.auth.getUser();
+
+    // Set the Supabase client in the auth store
+    if (isBrowser()) {
+        authStore.setSupabaseClient(supabase);
+    }
+
+    // Initialize auth store on client side
+    if (isBrowser() && session && user) {
+        await authStore.initialize(session);
+
+        // Load user data if authenticated
+        if (user.id) {
+            // Get user data from database
+            const { data: userData, error } = await supabase
+                .from("users")
+                .select("wallet_address, email, full_name, avatar_url")
+                .eq("auth_user_id", user.id)
+                .single();
+
+            if (!error && userData) {
+                await userStore.load(
+                    user.id,
+                    userData.email || user.email,
+                    userData.full_name || user.user_metadata?.full_name,
+                    userData.avatar_url || user.user_metadata?.avatar_url,
+                    userData.wallet_address,
+                );
+            }
+        }
+    }
 
     return { session, supabase, user };
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageData } from './$types';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
@@ -9,9 +10,78 @@
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import * as Alert from '$lib/components/ui/alert/index.js';
+
+	export let data: PageData;
+
+	// Helper to format relative time
+	function formatRelativeTime(timestamp: string): string {
+		const date = new Date(timestamp);
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffMins = Math.floor(diffMs / 60000);
+
+		if (diffMins < 1) return 'Just now';
+		if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+
+		const diffHours = Math.floor(diffMins / 60);
+		if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+
+		const diffDays = Math.floor(diffHours / 24);
+		return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+	}
+
+	// Helper to get status icon component
+	function getStatusIcon(type: string) {
+		switch (type) {
+			case 'safe':
+				return ShieldCheckIcon;
+			case 'flagged':
+				return ShieldAlertIcon;
+			case 'blocked':
+				return ShieldAlertIcon;
+			default:
+				return ActivityIcon;
+		}
+	}
+
+	// Helper to get status color
+	function getStatusColor(type: string) {
+		switch (type) {
+			case 'safe':
+				return 'bg-green-100';
+			case 'flagged':
+				return 'bg-amber-100';
+			case 'blocked':
+				return 'bg-red-100';
+			default:
+				return 'bg-blue-100';
+		}
+	}
+
+	// Helper to get icon color
+	function getIconColor(type: string) {
+		switch (type) {
+			case 'safe':
+				return 'text-green-600';
+			case 'flagged':
+				return 'text-amber-600';
+			case 'blocked':
+				return 'text-red-600';
+			default:
+				return 'text-blue-600';
+		}
+	}
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+	{#if data.error}
+		<Alert.Root variant="destructive">
+			<Alert.Title>Error Loading Dashboard Data</Alert.Title>
+			<Alert.Description>{data.error}</Alert.Description>
+		</Alert.Root>
+	{/if}
+
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 		<!-- Total Messages Card -->
 		<Card.Root>
@@ -41,8 +111,8 @@
 				<MessageSquareIcon class="h-4 w-4 text-muted-foreground" />
 			</Card.Header>
 			<Card.Content>
-				<div class="text-2xl font-bold">1,234</div>
-				<p class="text-xs text-muted-foreground">+20% from last month</p>
+				<div class="text-2xl font-bold">{data.stats.totalMessages.toLocaleString()}</div>
+				<p class="text-xs text-muted-foreground">All conversations tracked</p>
 			</Card.Content>
 		</Card.Root>
 
@@ -53,8 +123,8 @@
 				<ShieldCheckIcon class="h-4 w-4 text-green-600" />
 			</Card.Header>
 			<Card.Content>
-				<div class="text-2xl font-bold">1,180</div>
-				<p class="text-xs text-muted-foreground">95.6% safety rate</p>
+				<div class="text-2xl font-bold">{data.stats.safeMessages.toLocaleString()}</div>
+				<p class="text-xs text-muted-foreground">{data.stats.safetyRate}% safety rate</p>
 			</Card.Content>
 		</Card.Root>
 
@@ -88,8 +158,18 @@
 				<ShieldAlertIcon class="h-4 w-4 text-amber-600" />
 			</Card.Header>
 			<Card.Content>
-				<div class="text-2xl font-bold">54</div>
-				<p class="text-xs text-muted-foreground">4.4% of all messages</p>
+				<div class="text-2xl font-bold">
+					{data.stats.flaggedMessages + data.stats.blockedMessages}
+				</div>
+				<p class="text-xs text-muted-foreground">
+					{data.stats.totalMessages > 0
+						? (
+								((data.stats.flaggedMessages + data.stats.blockedMessages) /
+									data.stats.totalMessages) *
+								100
+							).toFixed(1)
+						: 0}% of all messages
+				</p>
 			</Card.Content>
 		</Card.Root>
 
@@ -100,7 +180,7 @@
 				<UsersIcon class="h-4 w-4 text-muted-foreground" />
 			</Card.Header>
 			<Card.Content>
-				<div class="text-2xl font-bold">5</div>
+				<div class="text-2xl font-bold">{data.stats.activeUsers}</div>
 				<p class="text-xs text-muted-foreground">Family members</p>
 			</Card.Content>
 		</Card.Root>
@@ -114,50 +194,38 @@
 				<Card.Description>Latest AI interactions and safety checks</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				<div class="space-y-4">
-					<div class="flex items-start gap-4">
-						<div class="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
-							<ShieldCheckIcon class="h-4 w-4 text-green-600" />
-						</div>
-						<div class="flex-1 space-y-1">
-							<p class="text-sm font-medium">Safe conversation detected</p>
-							<p class="text-xs text-muted-foreground">
-								Emma asked about homework help - 2 mins ago
-							</p>
-						</div>
+				{#if data.recentActivity.length > 0}
+					<div class="space-y-4">
+						{#each data.recentActivity as activity}
+							<div class="flex items-start gap-4">
+								<div
+									class="flex h-9 w-9 items-center justify-center rounded-full {getStatusColor(
+										activity.type
+									)}"
+								>
+									<svelte:component
+										this={getStatusIcon(activity.type)}
+										class="h-4 w-4 {getIconColor(activity.type)}"
+									/>
+								</div>
+								<div class="flex-1 space-y-1">
+									<p class="text-sm font-medium">{activity.description}</p>
+									<p class="text-xs text-muted-foreground">
+										{activity.user_name} - {formatRelativeTime(activity.timestamp)}
+									</p>
+								</div>
+							</div>
+						{/each}
 					</div>
-					<div class="flex items-start gap-4">
-						<div class="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100">
-							<ShieldAlertIcon class="h-4 w-4 text-amber-600" />
-						</div>
-						<div class="flex-1 space-y-1">
-							<p class="text-sm font-medium">Content flagged for review</p>
-							<p class="text-xs text-muted-foreground">
-								Alex's chat contained sensitive topics - 15 mins ago
-							</p>
-						</div>
+				{:else}
+					<div class="flex flex-col items-center justify-center py-8 text-center">
+						<ActivityIcon class="mb-2 h-12 w-12 text-muted-foreground" />
+						<p class="text-sm text-muted-foreground">No recent activity</p>
+						<p class="mt-1 text-xs text-muted-foreground">
+							Activity will appear here as users interact with the system
+						</p>
 					</div>
-					<div class="flex items-start gap-4">
-						<div class="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
-							<ShieldCheckIcon class="h-4 w-4 text-green-600" />
-						</div>
-						<div class="flex-1 space-y-1">
-							<p class="text-sm font-medium">Safe conversation detected</p>
-							<p class="text-xs text-muted-foreground">
-								Sarah discussed science project - 1 hour ago
-							</p>
-						</div>
-					</div>
-					<div class="flex items-start gap-4">
-						<div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
-							<ActivityIcon class="h-4 w-4 text-blue-600" />
-						</div>
-						<div class="flex-1 space-y-1">
-							<p class="text-sm font-medium">New family member added</p>
-							<p class="text-xs text-muted-foreground">Tom joined the family - 3 hours ago</p>
-						</div>
-					</div>
-				</div>
+				{/if}
 			</Card.Content>
 		</Card.Root>
 
@@ -172,9 +240,9 @@
 					<div>
 						<div class="flex items-center justify-between text-sm">
 							<span class="text-muted-foreground">Safety Rate</span>
-							<span class="font-medium">95.6%</span>
+							<span class="font-medium">{data.stats.safetyRate}%</span>
 						</div>
-						<Progress value={95.6} class="mt-2 [&>div]:bg-green-600" />
+						<Progress value={data.stats.safetyRate} class="mt-2 [&>div]:bg-green-600" />
 					</div>
 					<div>
 						<div class="flex items-center justify-between text-sm">
@@ -185,11 +253,11 @@
 					</div>
 					<div class="space-y-2 pt-4">
 						<div class="flex items-center gap-2">
-							<TrendingUpIcon class="h-4 w-4 text-green-600" />
-							<span class="text-sm font-medium">Improvement this week</span>
+							<ShieldCheckIcon class="h-4 w-4 text-green-600" />
+							<span class="text-sm font-medium">System Status</span>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							10% reduction in flagged content compared to last week
+							All messages are being monitored and analyzed in real-time
 						</p>
 					</div>
 				</div>
@@ -208,15 +276,29 @@
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
 						<span class="text-sm text-muted-foreground">Total Logs Stored</span>
-						<span class="text-sm font-medium">1,234</span>
+						<span class="text-sm font-medium"
+							>{data.stats.blockchainStats.totalLogs.toLocaleString()}</span
+						>
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="text-sm text-muted-foreground">Last Transaction</span>
-						<span class="text-sm font-medium">2 mins ago</span>
+						<span class="text-sm font-medium">
+							{data.stats.blockchainStats.lastTransaction
+								? formatRelativeTime(data.stats.blockchainStats.lastTransaction)
+								: 'No transactions yet'}
+						</span>
 					</div>
 					<div class="flex items-center justify-between">
-						<span class="text-sm text-muted-foreground">Network Status</span>
-						<span class="text-sm font-medium text-green-600">Active</span>
+						<span class="text-sm text-muted-foreground">Pending</span>
+						<span class="text-sm font-medium text-amber-600"
+							>{data.stats.blockchainStats.pendingTransactions}</span
+						>
+					</div>
+					<div class="flex items-center justify-between">
+						<span class="text-sm text-muted-foreground">Confirmed</span>
+						<span class="text-sm font-medium text-green-600"
+							>{data.stats.blockchainStats.confirmedTransactions}</span
+						>
 					</div>
 				</div>
 			</Card.Content>

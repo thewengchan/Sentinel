@@ -1,9 +1,10 @@
 /**
  * User Preferences Store - Manages user preferences and settings
  * Uses Svelte 5 runes for reactive state management
+ * Migrated from localStorage to Supabase
  */
 
-import { Storage, StorageKeys } from "$lib/utils/storage";
+import { showErrorToast } from "$lib/utils/supabase-errors";
 
 interface SavedAddress {
     address: string;
@@ -31,7 +32,13 @@ interface UserPreferences {
 interface UserState {
     preferences: UserPreferences;
     currentWalletAddress: string | null;
+    userId: string | null;
+    email: string | null;
+    fullName: string | null;
+    avatarUrl: string | null;
     isLoaded: boolean;
+    isLoading: boolean;
+    error: string | null;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -51,7 +58,13 @@ class UserStore {
     private state = $state<UserState>({
         preferences: DEFAULT_PREFERENCES,
         currentWalletAddress: null,
+        userId: null,
+        email: null,
+        fullName: null,
+        avatarUrl: null,
         isLoaded: false,
+        isLoading: false,
+        error: null,
     });
 
     // Getters
@@ -79,42 +92,134 @@ class UserStore {
         return this.state.isLoaded;
     }
 
-    /**
-     * Load preferences from localStorage
-     */
-    load(walletAddress?: string): void {
-        if (walletAddress) {
-            this.state.currentWalletAddress = walletAddress;
-        }
+    get isLoading() {
+        return this.state.isLoading;
+    }
 
-        // Load preferences specific to the wallet address if provided
-        const storageKey = walletAddress
-            ? `${StorageKeys.USER_PREFERENCES}_${walletAddress}`
-            : StorageKeys.USER_PREFERENCES;
+    get error() {
+        return this.state.error;
+    }
 
-        const stored = Storage.get<UserPreferences>(
-            storageKey,
-            DEFAULT_PREFERENCES,
-        );
-        this.state.preferences = { ...DEFAULT_PREFERENCES, ...stored };
-        this.state.isLoaded = true;
+    get userId() {
+        return this.state.userId;
+    }
+
+    get email() {
+        return this.state.email;
+    }
+
+    get fullName() {
+        return this.state.fullName;
+    }
+
+    get avatarUrl() {
+        return this.state.avatarUrl;
     }
 
     /**
-     * Save preferences to localStorage
+     * Load user data and preferences from Supabase
      */
-    private save(): void {
-        const storageKey = this.state.currentWalletAddress
-            ? `${StorageKeys.USER_PREFERENCES}_${this.state.currentWalletAddress}`
-            : StorageKeys.USER_PREFERENCES;
+    async load(
+        userId: string,
+        email?: string,
+        fullName?: string,
+        avatarUrl?: string,
+        walletAddress?: string,
+    ): Promise<void> {
+        if (!userId) {
+            this.state.error = "User ID is required";
+            return;
+        }
 
-        Storage.set(storageKey, this.state.preferences);
+        this.state.userId = userId;
+        this.state.email = email || null;
+        this.state.fullName = fullName || null;
+        this.state.avatarUrl = avatarUrl || null;
+        this.state.currentWalletAddress = walletAddress || null;
+        this.state.isLoading = true;
+        this.state.error = null;
+
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to load preferences");
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.preferences) {
+                this.state.preferences = {
+                    ...DEFAULT_PREFERENCES,
+                    ...result.preferences,
+                };
+            } else {
+                // No preferences found, use defaults
+                this.state.preferences = DEFAULT_PREFERENCES;
+            }
+
+            this.state.isLoaded = true;
+            this.state.error = null;
+        } catch (error) {
+            console.error("Failed to load user preferences:", error);
+            this.state.error = error instanceof Error
+                ? error.message
+                : "Failed to load preferences";
+            this.state.preferences = DEFAULT_PREFERENCES; // Fallback to defaults
+            this.state.isLoaded = true;
+            showErrorToast(error, "Failed to load preferences");
+        } finally {
+            this.state.isLoading = false;
+        }
+    }
+
+    /**
+     * Save preferences to Supabase
+     */
+    private async save(): Promise<void> {
+        if (!this.state.userId) {
+            console.warn(
+                "Cannot save preferences: missing userId",
+            );
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/user/preferences", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    preferences: this.state.preferences,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save preferences");
+            }
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || "Failed to save preferences");
+            }
+        } catch (error) {
+            console.error("Failed to save user preferences:", error);
+            showErrorToast(error, "Failed to save preferences");
+            throw error; // Re-throw so calling methods can handle it
+        }
     }
 
     /**
      * Add a saved address
      */
-    addSavedAddress(address: string, label: string): void {
+    async addSavedAddress(address: string, label: string): Promise<void> {
         const exists = this.state.preferences.savedAddresses.some((addr) =>
             addr.address === address
         );
@@ -134,18 +239,18 @@ class UserStore {
                 },
             ];
         }
-        this.save();
+        await this.save();
     }
 
     /**
      * Remove a saved address
      */
-    removeSavedAddress(address: string): void {
+    async removeSavedAddress(address: string): Promise<void> {
         this.state.preferences.savedAddresses = this.state.preferences
             .savedAddresses.filter(
                 (addr) => addr.address !== address,
             );
-        this.save();
+        await this.save();
     }
 
     /**
@@ -161,31 +266,33 @@ class UserStore {
     /**
      * Update notification preferences
      */
-    updateNotifications(updates: Partial<NotificationPreferences>): void {
+    async updateNotifications(
+        updates: Partial<NotificationPreferences>,
+    ): Promise<void> {
         this.state.preferences.notifications = {
             ...this.state.preferences.notifications,
             ...updates,
         };
-        this.save();
+        await this.save();
     }
 
     /**
      * Update display preferences
      */
-    updateDisplay(updates: Partial<DisplayPreferences>): void {
+    async updateDisplay(updates: Partial<DisplayPreferences>): Promise<void> {
         this.state.preferences.display = {
             ...this.state.preferences.display,
             ...updates,
         };
-        this.save();
+        await this.save();
     }
 
     /**
      * Reset preferences to defaults
      */
-    reset(): void {
+    async reset(): Promise<void> {
         this.state.preferences = DEFAULT_PREFERENCES;
-        this.save();
+        await this.save();
     }
 
     /**
@@ -195,13 +302,14 @@ class UserStore {
         this.state = {
             preferences: DEFAULT_PREFERENCES,
             currentWalletAddress: null,
+            userId: null,
+            email: null,
+            fullName: null,
+            avatarUrl: null,
             isLoaded: false,
+            isLoading: false,
+            error: null,
         };
-        if (this.state.currentWalletAddress) {
-            Storage.remove(
-                `${StorageKeys.USER_PREFERENCES}_${this.state.currentWalletAddress}`,
-            );
-        }
     }
 }
 

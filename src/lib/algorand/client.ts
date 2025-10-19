@@ -4,6 +4,7 @@
  */
 
 import { AlgorandClient as AlgoKitClient } from "@algorandfoundation/algokit-utils";
+import { ABIMethod } from "algosdk";
 import type { Wallet } from "@txnlab/use-wallet-svelte";
 import type { TransactionSigner } from "algosdk";
 import type {
@@ -279,6 +280,69 @@ export class AlgorandClient {
         });
 
         return this;
+    }
+
+    /**
+     * Submit incident to smart contract using ABI method call
+     */
+    async submitIncidentToContract(params: {
+        sender: string;
+        appId: number;
+        incidentId: string;
+        walletAddress: string;
+        contentHash: Uint8Array;
+        severity: number;
+        category: string;
+        policyVersion: string;
+        actionTaken: string;
+    }): Promise<{ txId: string; success: boolean; error?: string }> {
+        try {
+            // Define the ABI method for the smart contract
+            const method = new ABIMethod({
+                name: "submit_incident",
+                args: [
+                    { name: "incident_id", type: "string" },
+                    { name: "wallet_address", type: "address" },
+                    { name: "content_hash", type: "byte[]" },
+                    { name: "severity_level", type: "uint8" },
+                    { name: "category", type: "string" },
+                    { name: "policy_version", type: "string" },
+                    { name: "action_taken", type: "string" },
+                ],
+                returns: { type: "void" },
+            });
+
+            // Call the smart contract method
+            const result = await this.client.send.appCallMethodCall({
+                sender: params.sender,
+                appId: BigInt(params.appId),
+                method: method,
+                args: [
+                    params.incidentId,
+                    params.walletAddress,
+                    params.contentHash,
+                    params.severity,
+                    params.category,
+                    params.policyVersion,
+                    params.actionTaken,
+                ],
+            });
+
+            return {
+                txId: result.transaction.txID(),
+                success: true,
+            };
+        } catch (error) {
+            console.error(
+                "Failed to submit incident to smart contract:",
+                error,
+            );
+            return {
+                txId: "",
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+            };
+        }
     }
 }
 

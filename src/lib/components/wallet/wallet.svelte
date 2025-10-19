@@ -11,9 +11,10 @@
 	import { useWalletContext, useWallet } from '@txnlab/use-wallet-svelte';
 	import { onMount, untrack } from 'svelte';
 	import Network from '../algorand/network.svelte';
-	import { walletStore, blockchainStore, userStore, analyticsStore } from '$lib/stores';
+	import { walletStore, blockchainStore, userStore, chatStore, analyticsStore } from '$lib/stores';
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
 	import { testnetClient, mainnetClient } from '$lib/algorand/client';
+	import { showErrorToast, showSuccessToast } from '$lib/utils/supabase-errors';
 
 	interface WalletManagerConfig {
 		wallets?: SupportedWallets[]; // Array of wallets to enable
@@ -51,7 +52,7 @@
 
 		if (wallet?.isConnected) {
 			// Use untrack to prevent creating reactive dependencies
-			untrack(() => {
+			untrack(async () => {
 				// Update wallet store
 				walletStore.setWallet(wallet);
 
@@ -67,17 +68,35 @@
 						console.error('Failed to set up transaction signer:', error);
 					}
 
-					// Load user preferences for this wallet
-					userStore.load(address);
+					// Connect wallet to authenticated user
+					const connected = await walletStore.connectWallet(address);
+					if (connected) {
+						// Load user preferences for this wallet
+						await userStore.load(
+							userStore.userId || '',
+							userStore.email,
+							userStore.fullName,
+							userStore.avatarUrl,
+							address
+						);
 
-					// Fetch blockchain data
-					blockchainStore.fetchAll(address);
+						// Initialize chat store with user context
+						await chatStore.init(userStore.userId || '', address);
 
-					// Start auto-refresh
-					blockchainStore.startAutoRefresh(address);
+						// Fetch blockchain data
+						blockchainStore.fetchAll(address);
 
-					// Track wallet connection
-					analytics.trackWalletConnect(wallet.metadata.name, address, 'testnet');
+						// Start auto-refresh
+						blockchainStore.startAutoRefresh(address);
+
+						// Track wallet connection
+						analytics.trackWalletConnect(wallet.metadata.name, address, 'testnet');
+
+						showSuccessToast('Wallet connected successfully');
+					} else {
+						console.error('Failed to connect wallet to user account');
+						showErrorToast(new Error('Failed to connect wallet'), 'Failed to connect wallet');
+					}
 				}
 			});
 		} else if (!wallet || !wallet?.isConnected) {
@@ -93,6 +112,8 @@
 				// Clear stores
 				walletStore.disconnect();
 				blockchainStore.clear();
+				userStore.clear();
+				chatStore.clearAllSessions();
 			});
 		}
 	});

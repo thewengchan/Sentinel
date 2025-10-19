@@ -1,32 +1,46 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card/index.js";
+	import * as Card from '$lib/components/ui/card/index.js';
 	import {
 		FieldGroup,
 		Field,
 		FieldLabel,
 		FieldDescription,
-		FieldSeparator,
-	} from "$lib/components/ui/field/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { cn } from "$lib/utils.js";
-	import type { HTMLAttributes } from "svelte/elements";
+		FieldSeparator
+	} from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { cn } from '$lib/utils.js';
+	import type { HTMLAttributes } from 'svelte/elements';
+	import type { SupabaseClient } from '@supabase/supabase-js';
+	import { page } from '$app/state';
 
-	let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
+	let {
+		class: className,
+		supabase,
+		redirectTo = '/',
+		...restProps
+	}: HTMLAttributes<HTMLDivElement> & { supabase: SupabaseClient; redirectTo?: string } = $props();
 
 	const id = $props.id();
+
+	async function signInWithGoogle() {
+		await supabase.auth.signInWithOAuth({
+			provider: 'google',
+			options: {
+				redirectTo: `${page.url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+			}
+		});
+	}
 </script>
 
-<div class={cn("flex flex-col gap-6", className)} {...restProps}>
+<div class={cn('flex flex-col gap-6', className)} {...restProps}>
 	<Card.Root class="overflow-hidden p-0">
 		<Card.Content class="grid p-0 md:grid-cols-2">
 			<form class="p-6 md:p-8">
 				<FieldGroup>
 					<div class="flex flex-col items-center gap-2 text-center">
 						<h1 class="text-2xl font-bold">Welcome back</h1>
-						<p class="text-muted-foreground text-balance">
-							Login to your Acme Inc account
-						</p>
+						<p class="text-balance text-muted-foreground">Login to your Sentinel account</p>
 					</div>
 					<Field>
 						<FieldLabel for="email-{id}">Email</FieldLabel>
@@ -57,7 +71,7 @@
 							</svg>
 							<span class="sr-only">Login with Apple</span>
 						</Button>
-						<Button variant="outline" type="button">
+						<Button variant="outline" type="button" onclick={signInWithGoogle}>
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 								<path
 									d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
@@ -77,11 +91,11 @@
 						</Button>
 					</Field>
 					<FieldDescription class="text-center">
-						Don't have an account? <a href="##">Sign up</a>
+						Don't have an account? <a href="/auth/signup">Sign up</a>
 					</FieldDescription>
 				</FieldGroup>
 			</form>
-			<div class="bg-muted relative hidden md:block">
+			<div class="relative hidden bg-muted md:block">
 				<img
 					src="/placeholder.svg"
 					alt="placeholder"

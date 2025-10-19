@@ -1,17 +1,28 @@
 <script lang="ts">
+	import type { PageData } from './$types';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import TrendingDownIcon from '@lucide/svelte/icons/trending-down';
 	import BarChartIcon from '@lucide/svelte/icons/bar-chart';
 	import PieChartIcon from '@lucide/svelte/icons/pie-chart';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import DownloadIcon from '@lucide/svelte/icons/download';
+
+	export let data: PageData;
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
+	{#if data.error}
+		<Alert.Root variant="destructive">
+			<Alert.Title>Error Loading Analytics Data</Alert.Title>
+			<Alert.Description>{data.error}</Alert.Description>
+		</Alert.Root>
+	{/if}
+
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">Analytics</h1>
@@ -20,7 +31,7 @@
 		<div class="flex gap-2">
 			<Button variant="outline" size="sm">
 				<CalendarIcon class="mr-2 h-4 w-4" />
-				Last 30 Days
+				Last {data.timeRange} Days
 			</Button>
 			<Button variant="outline" size="sm">
 				<DownloadIcon class="mr-2 h-4 w-4" />
@@ -39,10 +50,19 @@
 						<BarChartIcon class="h-4 w-4 text-muted-foreground" />
 					</Card.Header>
 					<Card.Content>
-						<div class="text-2xl font-bold">95.6%</div>
-						<div class="flex items-center gap-1 text-xs text-green-600">
-							<TrendingUpIcon class="h-3 w-3" />
-							<span>+2.3% from last month</span>
+						<div class="text-2xl font-bold">{data.safetyScore}%</div>
+						<div
+							class="flex items-center gap-1 text-xs {data.safetyScore >= 95
+								? 'text-green-600'
+								: 'text-amber-600'}"
+						>
+							{#if data.safetyScore >= 95}
+								<TrendingUpIcon class="h-3 w-3" />
+								<span>Excellent safety rate</span>
+							{:else}
+								<TrendingDownIcon class="h-3 w-3" />
+								<span>Needs attention</span>
+							{/if}
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -53,10 +73,9 @@
 						<BarChartIcon class="h-4 w-4 text-muted-foreground" />
 					</Card.Header>
 					<Card.Content>
-						<div class="text-2xl font-bold">1.2s</div>
-						<div class="flex items-center gap-1 text-xs text-green-600">
-							<TrendingDownIcon class="h-3 w-3" />
-							<span>-0.3s improvement</span>
+						<div class="text-2xl font-bold">{data.avgResponseTime}s</div>
+						<div class="flex items-center gap-1 text-xs text-muted-foreground">
+							<span>AI processing time</span>
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -67,7 +86,7 @@
 						<PieChartIcon class="h-4 w-4 text-muted-foreground" />
 					</Card.Header>
 					<Card.Content>
-						<div class="text-2xl font-bold">4.8</div>
+						<div class="text-2xl font-bold">{data.dailyActiveUsers}</div>
 						<div class="flex items-center gap-1 text-xs text-muted-foreground">
 							<span>Average per day</span>
 						</div>
@@ -80,10 +99,19 @@
 						<BarChartIcon class="h-4 w-4 text-muted-foreground" />
 					</Card.Header>
 					<Card.Content>
-						<div class="text-2xl font-bold">4.4%</div>
-						<div class="flex items-center gap-1 text-xs text-green-600">
-							<TrendingDownIcon class="h-3 w-3" />
-							<span>-1.2% improvement</span>
+						<div class="text-2xl font-bold">{data.flaggedRate}%</div>
+						<div
+							class="flex items-center gap-1 text-xs {data.flaggedRate <= 5
+								? 'text-green-600'
+								: 'text-amber-600'}"
+						>
+							{#if data.flaggedRate <= 5}
+								<TrendingDownIcon class="h-3 w-3" />
+								<span>Low flagged content</span>
+							{:else}
+								<TrendingUpIcon class="h-3 w-3" />
+								<span>Higher than target</span>
+							{/if}
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -118,36 +146,25 @@
 						<Card.Description>Breakdown of flagged content types</Card.Description>
 					</Card.Header>
 					<Card.Content>
-						<div class="space-y-4">
-							<div>
-								<div class="mb-2 flex items-center justify-between text-sm">
-									<span>Inappropriate Content</span>
-									<span class="font-medium">45%</span>
-								</div>
-								<Progress value={45} class="[&>div]:bg-amber-600" />
+						{#if data.categoryBreakdown.length > 0}
+							<div class="space-y-4">
+								{#each data.categoryBreakdown as category}
+									<div>
+										<div class="mb-2 flex items-center justify-between text-sm">
+											<span class="capitalize">{category.category}</span>
+											<span class="font-medium">{category.percentage.toFixed(1)}%</span>
+										</div>
+										<Progress value={category.percentage} class="[&>div]:bg-amber-600" />
+									</div>
+								{/each}
 							</div>
-							<div>
-								<div class="mb-2 flex items-center justify-between text-sm">
-									<span>Privacy Concerns</span>
-									<span class="font-medium">30%</span>
-								</div>
-								<Progress value={30} class="[&>div]:bg-orange-600" />
+						{:else}
+							<div class="flex flex-col items-center justify-center py-8 text-center">
+								<PieChartIcon class="mb-2 h-12 w-12 text-muted-foreground" />
+								<p class="text-sm text-muted-foreground">No flagged content</p>
+								<p class="mt-1 text-xs text-muted-foreground">All messages are safe</p>
 							</div>
-							<div>
-								<div class="mb-2 flex items-center justify-between text-sm">
-									<span>Misinformation</span>
-									<span class="font-medium">15%</span>
-								</div>
-								<Progress value={15} class="[&>div]:bg-yellow-600" />
-							</div>
-							<div>
-								<div class="mb-2 flex items-center justify-between text-sm">
-									<span>Other</span>
-									<span class="font-medium">10%</span>
-								</div>
-								<Progress value={10} class="[&>div]:bg-gray-600" />
-							</div>
-						</div>
+						{/if}
 					</Card.Content>
 				</Card.Root>
 			</div>
@@ -161,91 +178,62 @@
 					<Card.Description>Message count and safety metrics per user</Card.Description>
 				</Card.Header>
 				<Card.Content>
-					<div class="space-y-4">
-						<div class="flex items-center justify-between rounded-lg border p-4">
-							<div class="flex items-center gap-4">
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700"
-								>
-									E
+					{#if data.userActivity.length > 0}
+						<div class="space-y-4">
+							{#each data.userActivity as user, index}
+								<div class="flex items-center justify-between rounded-lg border p-4">
+									<div class="flex items-center gap-4">
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-full {index % 4 ===
+											0
+												? 'bg-blue-100 text-blue-700'
+												: index % 4 === 1
+													? 'bg-green-100 text-green-700'
+													: index % 4 === 2
+														? 'bg-purple-100 text-purple-700'
+														: 'bg-orange-100 text-orange-700'} font-semibold"
+										>
+											{user.user_name.charAt(0).toUpperCase()}
+										</div>
+										<div>
+											<p class="font-medium">{user.user_name}</p>
+											<p class="text-xs text-muted-foreground">Member</p>
+										</div>
+									</div>
+									<div class="flex gap-8 text-sm">
+										<div>
+											<p class="text-muted-foreground">Messages</p>
+											<p class="font-semibold">{user.messages.toLocaleString()}</p>
+										</div>
+										<div>
+											<p class="text-muted-foreground">Safety Rate</p>
+											<p
+												class="font-semibold {user.safetyRate >= 95
+													? 'text-green-600'
+													: user.safetyRate >= 90
+														? 'text-amber-600'
+														: 'text-red-600'}"
+											>
+												{user.safetyRate}%
+											</p>
+										</div>
+										<div>
+											<p class="text-muted-foreground">Flagged</p>
+											<p class="font-semibold text-amber-600">{user.flaggedCount}</p>
+										</div>
+									</div>
 								</div>
-								<div>
-									<p class="font-medium">Emma</p>
-									<p class="text-xs text-muted-foreground">Child</p>
-								</div>
-							</div>
-							<div class="flex gap-8 text-sm">
-								<div>
-									<p class="text-muted-foreground">Messages</p>
-									<p class="font-semibold">342</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Safety Rate</p>
-									<p class="font-semibold text-green-600">97.2%</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Flagged</p>
-									<p class="font-semibold text-amber-600">10</p>
-								</div>
-							</div>
+							{/each}
 						</div>
-
-						<div class="flex items-center justify-between rounded-lg border p-4">
-							<div class="flex items-center gap-4">
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-semibold text-green-700"
-								>
-									A
-								</div>
-								<div>
-									<p class="font-medium">Alex</p>
-									<p class="text-xs text-muted-foreground">Child</p>
-								</div>
-							</div>
-							<div class="flex gap-8 text-sm">
-								<div>
-									<p class="text-muted-foreground">Messages</p>
-									<p class="font-semibold">289</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Safety Rate</p>
-									<p class="font-semibold text-green-600">93.8%</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Flagged</p>
-									<p class="font-semibold text-amber-600">18</p>
-								</div>
-							</div>
+					{:else}
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<BarChartIcon class="mb-4 h-16 w-16 text-muted-foreground" />
+							<p class="text-lg font-medium">No user activity yet</p>
+							<p class="mt-2 text-sm text-muted-foreground">
+								User activity will appear here as members use the system
+							</p>
 						</div>
-
-						<div class="flex items-center justify-between rounded-lg border p-4">
-							<div class="flex items-center gap-4">
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 font-semibold text-purple-700"
-								>
-									S
-								</div>
-								<div>
-									<p class="font-medium">Sarah</p>
-									<p class="text-xs text-muted-foreground">Child</p>
-								</div>
-							</div>
-							<div class="flex gap-8 text-sm">
-								<div>
-									<p class="text-muted-foreground">Messages</p>
-									<p class="font-semibold">421</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Safety Rate</p>
-									<p class="font-semibold text-green-600">98.1%</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground">Flagged</p>
-									<p class="font-semibold text-amber-600">8</p>
-								</div>
-							</div>
-						</div>
-					</div>
+					{/if}
 				</Card.Content>
 			</Card.Root>
 		</Tabs.Content>

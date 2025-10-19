@@ -78,7 +78,30 @@ const authGuard: Handle = async ({ event, resolve }) => {
     event.locals.session = session;
     event.locals.user = user;
 
-    if (!event.locals.session && event.url.pathname.startsWith("/admin")) {
+    // Define protected routes that require authentication
+    const protectedRoutes = [
+        "/wallet",
+        "/chat",
+        "/analytics",
+        "/settings",
+        "/family",
+        "/logs",
+        "/transactions",
+        "/contracts",
+        "/admin",
+    ];
+
+    const isProtectedRoute = protectedRoutes.some((route) =>
+        event.url.pathname.startsWith(route)
+    );
+
+    // Redirect unauthenticated users from protected routes to login
+    if (!event.locals.session && !event.url.pathname.startsWith("/auth")) {
+        redirect(303, "/auth/login");
+    }
+
+    // Redirect authenticated users from login page to wallet
+    if (event.locals.session && event.url.pathname === "/auth/login") {
         redirect(303, "/wallet");
     }
 

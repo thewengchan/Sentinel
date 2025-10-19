@@ -28,25 +28,6 @@
 				invalidate('supabase:auth');
 			}
 		});
-		// Initialize analytics - DISABLED
-		// analyticsStore.init();
-
-		// Initialize chat store
-		chatStore.init();
-
-		// Load user preferences (without wallet address - will load specific prefs on wallet connect)
-		userStore.load();
-
-		// const analytics = useAnalytics();
-
-		// Track initial page view - DISABLED
-		// analytics.trackPageView(window.location.pathname);
-
-		return () => {
-			data.subscription.unsubscribe();
-			// unsubscribe();
-			// analyticsStore.stopAutoFlush();
-		};
 	});
 </script>
 
@@ -59,24 +40,4 @@
 <Toaster />
 <ModeWatcher />
 
-<Wallet>
-	<Sidebar.Provider>
-		<AppSidebar />
-		<Sidebar.Inset>
-			<header
-				class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
-			>
-				<div class="flex w-full items-center justify-between gap-2 px-4">
-					<div class="flex items-center gap-2 px-4">
-						<Sidebar.Trigger class="-ml-1" />
-						<Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
-						<DynamicBreadcrumb />
-					</div>
-
-					<Modewatcher />
-				</div>
-			</header>
-			{@render children?.()}
-		</Sidebar.Inset>
-	</Sidebar.Provider>
-</Wallet>
+{@render children?.()}
