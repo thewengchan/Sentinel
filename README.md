@@ -65,7 +65,7 @@ This architecture would not be possible on traditional blockchains due to storag
 
 ## Presentation
 
-**Canva Presentation Link:** [PLACEHOLDER - Link to Canva presentation slides](https://canva.com/placeholder)
+**Canva Presentation Link:** [Canva presentation slides](https://www.canva.com/design/DAG2IvW4afc/228IdAVSLtzTTMJkF8TdOg/edit)
 
 _Note: Presentation includes slides on team, problem statement, solution architecture, Algorand integration, and demo walkthrough._
 
@@ -256,19 +256,19 @@ By giving users control, visibility, and immutable proofs, Sentinel builds **a n
 
 #### Dashboard Overview
 
-![PLACEHOLDER - Dashboard Screenshot](screenshots/dashboard.png)
+![Dashboard Screenshot](/screenshots/dashboard.png)
 
 #### Chat Interface with Moderation
 
-![PLACEHOLDER - Chat Interface Screenshot](screenshots/chat-interface.png)
+![Chat Interface Screenshot](/screenshots/chat-interface.png)
 
 #### Incident Analytics
 
-![PLACEHOLDER - Analytics Screenshot](screenshots/analytics.png)
+![Analytics Screenshot](/screenshots/analytics.png)
 
 #### Wallet Integration
 
-![PLACEHOLDER - Wallet Connection Screenshot](screenshots/wallet-integration.png)
+![Wallet Integration Screenshot](/screenshots/wallet-integration.png)
 
 ### Smart Contract Description
 
