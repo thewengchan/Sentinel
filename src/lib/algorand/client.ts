@@ -108,55 +108,74 @@ export class AlgorandClient {
 
             if (!response.transactions) return [];
 
-            return response.transactions.map((tx) => {
-                const paymentTxn = tx.paymentTransaction;
-                const assetTransferTxn = tx.assetTransferTransaction;
-
-                // Safely decode note field with error handling
-                let decodedNote: string | undefined;
-                if (tx.note) {
-                    try {
-                        // Try to decode as base64
-                        decodedNote = atob(String(tx.note));
-                    } catch (error) {
-                        // If decoding fails, check if it's already a string
-                        // or contains invalid base64 characters
-                        console.warn(
-                            `Failed to decode transaction note for tx ${tx.id}:`,
-                            error,
-                        );
-                        // Keep the original value if decoding fails
-                        decodedNote = String(tx.note);
+            return response.transactions
+                .map((tx) => {
+                    // Skip transactions that don't have required fields
+                    if (!tx.id) {
+                        console.warn("Skipping transaction without ID");
+                        return null;
                     }
-                }
+                    const paymentTxn = tx.paymentTransaction;
+                    const assetTransferTxn = tx.assetTransferTransaction;
 
-                return {
-                    id: String(tx.id || ""),
-                    sender: String(tx.sender || ""),
-                    receiver: String(
-                        paymentTxn?.receiver ||
-                            assetTransferTxn?.receiver ||
-                            "",
-                    ),
-                    amount: Number(
-                        paymentTxn?.amount ||
-                            assetTransferTxn?.amount ||
-                            0,
-                    ),
-                    fee: Number(tx.fee || 0),
-                    type: String(tx.txType || "pay") as
-                        | "pay"
-                        | "axfer"
-                        | "acfg"
-                        | "afrz"
-                        | "keyreg"
-                        | "appl",
-                    roundTime: Number(tx.roundTime || 0),
-                    confirmedRound: Number(tx.confirmedRound || 0),
-                    note: decodedNote,
-                    assetId: Number(assetTransferTxn?.assetId || 0),
-                };
-            });
+                    // Safely decode note field with error handling
+                    let decodedNote: string | undefined;
+                    if (tx.note) {
+                        try {
+                            const noteStr = String(tx.note);
+
+                            // Check if the note is already a readable string (not base64)
+                            // Base64 strings typically contain only A-Z, a-z, 0-9, +, /, and =
+                            const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+
+                            if (
+                                base64Regex.test(noteStr) && noteStr.length > 0
+                            ) {
+                                // Try to decode as base64
+                                decodedNote = atob(noteStr);
+                            } else {
+                                // If it doesn't look like base64, treat as plain text
+                                decodedNote = noteStr;
+                            }
+                        } catch (error) {
+                            // If decoding fails, keep the original value
+                            console.warn(
+                                `Failed to decode transaction note for tx ${tx.id}:`,
+                                error,
+                            );
+                            decodedNote = String(tx.note);
+                        }
+                    }
+
+                    const receiver = paymentTxn?.receiver ||
+                        assetTransferTxn?.receiver;
+
+                    return {
+                        id: String(tx.id || ""),
+                        sender: String(tx.sender || ""),
+                        receiver: receiver ? String(receiver) : undefined,
+                        amount: Number(
+                            paymentTxn?.amount ||
+                                assetTransferTxn?.amount ||
+                                0,
+                        ),
+                        fee: Number(tx.fee || 0),
+                        type: String(tx.txType || "pay") as
+                            | "pay"
+                            | "axfer"
+                            | "acfg"
+                            | "afrz"
+                            | "keyreg"
+                            | "appl",
+                        roundTime: Number(tx.roundTime || 0),
+                        confirmedRound: Number(tx.confirmedRound || 0),
+                        note: decodedNote,
+                        assetId: assetTransferTxn?.assetId
+                            ? Number(assetTransferTxn.assetId)
+                            : undefined,
+                    };
+                })
+                .filter((tx) => tx !== null) as AlgoTransaction[];
         } catch (error) {
             console.error("Error fetching transactions:", error);
             return [];
