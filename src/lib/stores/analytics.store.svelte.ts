@@ -37,7 +37,7 @@ class AnalyticsStore {
     private state = $state<AnalyticsState>({
         events: [],
         sessionId: this.getOrCreateSessionId(),
-        isEnabled: true,
+        isEnabled: false, // Disabled by default
     });
 
     private eventQueue: AnalyticsEvent[] = [];

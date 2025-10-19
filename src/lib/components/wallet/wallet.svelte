@@ -9,10 +9,11 @@
 	} from '@txnlab/use-wallet-svelte';
 
 	import { useWalletContext, useWallet } from '@txnlab/use-wallet-svelte';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Network from '../algorand/network.svelte';
 	import { walletStore, blockchainStore, userStore, analyticsStore } from '$lib/stores';
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
+	import { testnetClient, mainnetClient } from '$lib/algorand/client';
 
 	interface WalletManagerConfig {
 		wallets?: SupportedWallets[]; // Array of wallets to enable
@@ -31,26 +32,41 @@
 	useWalletContext(manager);
 
 	const analytics = useAnalytics();
+	const { activeWallet, transactionSigner } = useWallet();
 
-	// Sync wallet state with store
+	// Set network in stores on mount
 	onMount(() => {
-		const { activeWallet } = useWallet();
-
-		// Set network in stores
 		walletStore.setNetwork('testnet');
 		blockchainStore.setNetwork('testnet');
 
-		// Watch for wallet changes
-		$effect(() => {
-			const wallet = activeWallet();
+		// Cleanup on unmount
+		return () => {
+			blockchainStore.stopAutoRefresh();
+		};
+	});
 
-			if (wallet?.isConnected) {
+	// Watch for wallet changes - moved outside onMount
+	$effect(() => {
+		const wallet = activeWallet();
+
+		if (wallet?.isConnected) {
+			// Use untrack to prevent creating reactive dependencies
+			untrack(() => {
 				// Update wallet store
 				walletStore.setWallet(wallet);
 
 				// Get address from wallet store after setting
 				const address = walletStore.activeAddress;
 				if (address) {
+					// Set up transaction signer for the connected wallet
+					const client = walletStore.network === 'mainnet' ? mainnetClient : testnetClient;
+					try {
+						client.setSigner(wallet, transactionSigner);
+						console.log('✅ Transaction signer set up for:', wallet.metadata.name);
+					} catch (error) {
+						console.error('Failed to set up transaction signer:', error);
+					}
+
 					// Load user preferences for this wallet
 					userStore.load(address);
 
@@ -63,7 +79,10 @@
 					// Track wallet connection
 					analytics.trackWalletConnect(wallet.metadata.name, address, 'testnet');
 				}
-			} else if (!wallet || !wallet?.isConnected) {
+			});
+		} else if (!wallet || !wallet?.isConnected) {
+			// Use untrack to prevent creating reactive dependencies
+			untrack(() => {
 				// Wallet disconnected
 				const previousAddress = walletStore.activeAddress;
 
@@ -74,13 +93,8 @@
 				// Clear stores
 				walletStore.disconnect();
 				blockchainStore.clear();
-			}
-		});
-
-		// Cleanup on unmount
-		return () => {
-			blockchainStore.stopAutoRefresh();
-		};
+			});
+		}
 	});
 </script>
 

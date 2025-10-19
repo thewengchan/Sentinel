@@ -18,6 +18,7 @@
 	import { userStore } from '$lib/stores';
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
 	import { toast } from 'svelte-sonner';
+	import SEOMeta from '$lib/components/seo-meta.svelte';
 
 	let input = $state('');
 	let chat = $state<Chat | null>(null);
@@ -297,6 +298,22 @@
 		return null;
 	}
 </script>
+
+<!-- Custom SEO for Chat Page -->
+<SEOMeta
+	seo={{
+		title: 'Secure Chat Interface',
+		description:
+			'Real-time AI-powered chat with blockchain verification. Experience safe, monitored conversations with instant content moderation and immutable incident recording.',
+		keywords: [
+			'secure chat',
+			'AI moderation',
+			'real-time safety',
+			'blockchain chat',
+			'monitored conversations'
+		]
+	}}
+/>
 
 <main class="mx-auto flex h-full w-full max-w-4xl flex-col p-4">
 	<!-- Header -->

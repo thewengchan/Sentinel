@@ -1,8 +1,11 @@
 /**
- * Algorand client utilities for interacting with the blockchain
+ * Algorand client utilities using AlgoKit
+ * Wrapper around @algorandfoundation/algokit-utils for blockchain interactions
  */
 
-import algosdk from "algosdk";
+import { AlgorandClient as AlgoKitClient } from "@algorandfoundation/algokit-utils";
+import type { Wallet } from "@txnlab/use-wallet-svelte";
+import type { TransactionSigner } from "algosdk";
 import type {
     AlgoAccount,
     AlgoBalance,
@@ -11,53 +14,15 @@ import type {
     TransactionParams,
 } from "./types";
 
-// Algorand node configuration
-const ALGOD_CONFIG = {
-    testnet: {
-        server: "https://testnet-api.algonode.cloud",
-        port: "",
-        token: "",
-    },
-    mainnet: {
-        server: "https://mainnet-api.algonode.cloud",
-        port: "",
-        token: "",
-    },
-};
-
-const INDEXER_CONFIG = {
-    testnet: {
-        server: "https://testnet-idx.algonode.cloud",
-        port: "",
-        token: "",
-    },
-    mainnet: {
-        server: "https://mainnet-idx.algonode.cloud",
-        port: "",
-        token: "",
-    },
-};
-
 export class AlgorandClient {
-    private algodClient: algosdk.Algodv2;
-    private indexerClient: algosdk.Indexer;
+    private client: AlgoKitClient;
     private network: "testnet" | "mainnet";
 
     constructor(network: "testnet" | "mainnet" = "testnet") {
         this.network = network;
-        const algodConfig = ALGOD_CONFIG[network];
-        const indexerConfig = INDEXER_CONFIG[network];
-
-        this.algodClient = new algosdk.Algodv2(
-            algodConfig.token,
-            algodConfig.server,
-            algodConfig.port,
-        );
-        this.indexerClient = new algosdk.Indexer(
-            indexerConfig.token,
-            indexerConfig.server,
-            indexerConfig.port,
-        );
+        this.client = network === "mainnet"
+            ? AlgoKitClient.mainNet()
+            : AlgoKitClient.testNet();
     }
 
     /**
@@ -65,24 +30,36 @@ export class AlgorandClient {
      */
     async getAccountInfo(address: string): Promise<AlgoAccount | null> {
         try {
-            const accountInfo = await this.algodClient.accountInformation(
-                address,
-            ).do();
-            // Convert algosdk response to our type
+            const accountInfo = await this.client.client.algod
+                .accountInformation(address).do();
+
             return {
                 address: accountInfo.address,
                 amount: Number(accountInfo.amount),
                 amountWithoutPendingRewards: Number(
-                    accountInfo["amount-without-pending-rewards"] || 0,
+                    accountInfo.amountWithoutPendingRewards || 0,
                 ),
-                pendingRewards: Number(accountInfo["pending-rewards"] || 0),
+                pendingRewards: Number(accountInfo.pendingRewards || 0),
                 rewards: Number(accountInfo.rewards || 0),
-                round: accountInfo.round,
+                round: Number(accountInfo.round),
                 status: accountInfo.status,
-                assets: accountInfo.assets,
-                createdApps: accountInfo["created-apps"],
-                createdAssets: accountInfo["created-assets"],
-                minBalance: Number(accountInfo["min-balance"] || 0),
+                assets: accountInfo.assets?.map((asset) => ({
+                    assetId: Number(asset.assetId),
+                    amount: Number(asset.amount),
+                    creator: "",
+                    frozen: asset.isFrozen || false,
+                    decimals: 0,
+                    name: undefined,
+                    unitName: undefined,
+                })),
+                createdApps: accountInfo.createdApps?.map((app) =>
+                    Number(app.id)
+                ) ||
+                    [],
+                createdAssets: accountInfo.createdAssets?.map((asset) =>
+                    Number(asset.index)
+                ) || [],
+                minBalance: Number(accountInfo.minBalance || 0),
             };
         } catch (error) {
             console.error("Error fetching account info:", error);
@@ -102,7 +79,7 @@ export class AlgorandClient {
                 algo: accountInfo.amount / 1_000_000, // Convert microAlgos to ALGO
                 assets: accountInfo.assets?.map((asset) => ({
                     assetId: asset.assetId,
-                    amount: asset.amount / Math.pow(10, asset.decimals),
+                    amount: asset.amount / Math.pow(10, asset.decimals || 0),
                     decimals: asset.decimals,
                     name: asset.name,
                     unitName: asset.unitName,
@@ -122,7 +99,7 @@ export class AlgorandClient {
         limit: number = 20,
     ): Promise<AlgoTransaction[]> {
         try {
-            const response = await this.indexerClient
+            const response = await this.client.client.indexer
                 .searchForTransactions()
                 .address(address)
                 .limit(limit)
@@ -130,45 +107,37 @@ export class AlgorandClient {
 
             if (!response.transactions) return [];
 
-            return response.transactions.map((tx: Record<string, unknown>) => ({
-                id: String(tx.id || ""),
-                sender: String(tx.sender || ""),
-                receiver: String(
-                    (tx["payment-transaction"] as Record<string, unknown>)
-                        ?.receiver ||
-                        (tx["asset-transfer-transaction"] as Record<
-                            string,
-                            unknown
-                        >)?.receiver ||
-                        "",
-                ),
-                amount: Number(
-                    (tx["payment-transaction"] as Record<string, unknown>)
-                        ?.amount ||
-                        (tx["asset-transfer-transaction"] as Record<
-                            string,
-                            unknown
-                        >)?.amount ||
-                        0,
-                ),
-                fee: Number(tx.fee || 0),
-                type: String(tx["tx-type"] || "pay") as
-                    | "pay"
-                    | "axfer"
-                    | "acfg"
-                    | "afrz"
-                    | "keyreg"
-                    | "appl",
-                roundTime: Number(tx["round-time"] || 0),
-                confirmedRound: Number(tx["confirmed-round"] || 0),
-                note: tx.note ? atob(String(tx.note)) : undefined,
-                assetId: Number(
-                    (tx["asset-transfer-transaction"] as Record<
-                        string,
-                        unknown
-                    >)?.["asset-id"] || 0,
-                ),
-            }));
+            return response.transactions.map((tx) => {
+                const paymentTxn = tx.paymentTransaction;
+                const assetTransferTxn = tx.assetTransferTransaction;
+
+                return {
+                    id: String(tx.id || ""),
+                    sender: String(tx.sender || ""),
+                    receiver: String(
+                        paymentTxn?.receiver ||
+                            assetTransferTxn?.receiver ||
+                            "",
+                    ),
+                    amount: Number(
+                        paymentTxn?.amount ||
+                            assetTransferTxn?.amount ||
+                            0,
+                    ),
+                    fee: Number(tx.fee || 0),
+                    type: String(tx.txType || "pay") as
+                        | "pay"
+                        | "axfer"
+                        | "acfg"
+                        | "afrz"
+                        | "keyreg"
+                        | "appl",
+                    roundTime: Number(tx.roundTime || 0),
+                    confirmedRound: Number(tx.confirmedRound || 0),
+                    note: tx.note ? atob(String(tx.note)) : undefined,
+                    assetId: Number(assetTransferTxn?.assetId || 0),
+                };
+            });
         } catch (error) {
             console.error("Error fetching transactions:", error);
             return [];
@@ -180,18 +149,18 @@ export class AlgorandClient {
      */
     async getNetworkInfo(): Promise<AlgoNetworkInfo | null> {
         try {
-            const status = await this.algodClient.status().do();
+            const status = await this.client.client.algod.status().do();
 
             return {
                 network: this.network,
-                lastRound: Number(
-                    status.lastRound || status["last-round"] || 0,
-                ),
+                lastRound: Number(status.lastRound || 0),
                 genesisId: String(
-                    status.genesisId || status["genesis-id"] || "",
+                    (status as unknown as Record<string, unknown>).genesisId ||
+                        "",
                 ),
                 genesisHash: String(
-                    status.genesisHash || status["genesis-hash"] || "",
+                    (status as unknown as Record<string, unknown>)
+                        .genesisHash || "",
                 ),
             };
         } catch (error) {
@@ -205,23 +174,21 @@ export class AlgorandClient {
      */
     async getSuggestedParams(): Promise<TransactionParams | null> {
         try {
-            const params = await this.algodClient.getTransactionParams().do();
-            const genesisHash = params.genesisHash || params["genesis-hash"];
+            const params = await this.client.client.algod.getTransactionParams()
+                .do();
 
             return {
-                fee: Number(params.fee || 0),
-                firstRound: Number(
-                    params.firstRound || params["first-round"] || 0,
-                ),
-                lastRound: Number(
-                    params.lastRound || params["last-round"] || 0,
-                ),
-                genesisID: String(
-                    params.genesisID || params["genesis-id"] || "",
-                ),
-                genesisHash: typeof genesisHash === "string"
-                    ? genesisHash
-                    : Buffer.from(genesisHash).toString("base64"),
+                fee: Number(params.fee || params.minFee || 0),
+                firstRound: Number(params.firstValid || 0),
+                lastRound: Number(params.lastValid || 0),
+                genesisID: String(params.genesisID || ""),
+                genesisHash: typeof params.genesisHash === "string"
+                    ? params.genesisHash
+                    : btoa(
+                        String.fromCharCode(
+                            ...new Uint8Array(params.genesisHash),
+                        ),
+                    ),
             };
         } catch (error) {
             console.error("Error fetching suggested params:", error);
@@ -236,8 +203,10 @@ export class AlgorandClient {
         assetId: number,
     ): Promise<Record<string, unknown> | null> {
         try {
-            const assetInfo = await this.algodClient.getAssetByID(assetId).do();
-            return assetInfo as Record<string, unknown>;
+            const assetInfo = await this.client.client.algod.getAssetByID(
+                assetId,
+            ).do();
+            return assetInfo as unknown as Record<string, unknown>;
         } catch (error) {
             console.error("Error fetching asset info:", error);
             return null;
@@ -248,7 +217,12 @@ export class AlgorandClient {
      * Check if address is valid
      */
     static isValidAddress(address: string): boolean {
-        return algosdk.isValidAddress(address);
+        // Simple validation: Algorand addresses are 58 characters long
+        if (!address || address.length !== 58) return false;
+
+        // Check if it contains only valid base32 characters
+        const validChars = /^[A-Z2-7]+$/;
+        return validChars.test(address);
     }
 
     /**
@@ -276,6 +250,35 @@ export class AlgorandClient {
      */
     static algoToMicroAlgos(algo: number): number {
         return Math.floor(algo * 1_000_000);
+    }
+
+    /**
+     * Get the underlying AlgoKit client for advanced operations
+     */
+    getAlgoKitClient(): AlgoKitClient {
+        return this.client;
+    }
+
+    /**
+     * Set up a signer for a wallet account
+     * Integrates @txnlab/use-wallet-svelte with AlgoKit's transaction signing
+     */
+    setSigner(
+        wallet: Wallet,
+        transactionSigner: TransactionSigner,
+    ): AlgorandClient {
+        const accounts = wallet.accounts?.current;
+
+        if (!accounts || accounts.length === 0) {
+            throw new Error("No accounts found in wallet");
+        }
+
+        // Set up signer for each account in the wallet
+        accounts.forEach((account: { address: string; name?: string }) => {
+            this.client.setSigner(account.address, transactionSigner);
+        });
+
+        return this;
     }
 }
 

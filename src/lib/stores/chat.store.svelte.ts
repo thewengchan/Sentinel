@@ -5,6 +5,7 @@
 
 import { Storage, StorageKeys } from "$lib/utils/storage";
 import type { UIMessage } from "ai";
+import { SvelteMap } from "svelte/reactivity";
 
 export interface ChatMessage {
     role: "user" | "assistant" | "system";
@@ -308,7 +309,10 @@ class ChatStore {
      * Set moderation result for a message
      */
     setModerationResult(messageId: string, result: ModerationResult): void {
-        this.state.moderationResults.set(messageId, result);
+        // Create new Map to trigger reactivity in Svelte 5
+        const newMap = new Map(this.state.moderationResults);
+        newMap.set(messageId, result);
+        this.state.moderationResults = newMap;
 
         // If blocked, mark session as blocked
         if (result.action === "block" && !result.allowed) {
@@ -331,18 +335,22 @@ class ChatStore {
      * Set pending moderation for a message
      */
     setPendingModeration(messageId: string): void {
-        this.state.moderationResults.set(messageId, {
+        // Create new Map to trigger reactivity in Svelte 5
+        const newMap = new SvelteMap(this.state.moderationResults);
+        newMap.set(messageId, {
             allowed: true,
             action: "allow",
             pending: true,
         });
+        this.state.moderationResults = newMap;
     }
 
     /**
      * Clear moderation results (useful when starting new session)
      */
     clearModerationResults(): void {
-        this.state.moderationResults.clear();
+        // Create new empty Map to trigger reactivity in Svelte 5
+        this.state.moderationResults = new Map();
     }
 
     /**

@@ -72,6 +72,62 @@ export type Database = {
           },
         ];
       };
+      incidents: {
+        Row: {
+          action: string;
+          category: string;
+          chain_status: string;
+          content_hash: string;
+          from_side: string;
+          id: string;
+          message_id: string;
+          policy_version: string;
+          severity: number;
+          session_id: string;
+          ts: string;
+          tx_id: string | null;
+          wallet_address: string | null;
+        };
+        Insert: {
+          action: string;
+          category: string;
+          chain_status?: string;
+          content_hash: string;
+          from_side: string;
+          id?: string;
+          message_id: string;
+          policy_version: string;
+          severity: number;
+          session_id: string;
+          ts?: string;
+          tx_id?: string | null;
+          wallet_address?: string | null;
+        };
+        Update: {
+          action?: string;
+          category?: string;
+          chain_status?: string;
+          content_hash?: string;
+          from_side?: string;
+          id?: string;
+          message_id?: string;
+          policy_version?: string;
+          severity?: number;
+          session_id?: string;
+          ts?: string;
+          tx_id?: string | null;
+          wallet_address?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "incidents_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "chat_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       chat_messages: {
         Row: {
           content: string;
@@ -292,15 +348,13 @@ export type TablesInsert<
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
       "Tables"
     ]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
+} ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
     "Tables"
   ][TableName] extends {
     Insert: infer I;
@@ -319,15 +373,13 @@ export type TablesUpdate<
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
       "Tables"
     ]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
+} ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]][
     "Tables"
   ][TableName] extends {
     Update: infer U;
@@ -346,15 +398,13 @@ export type Enums<
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]][
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]][
       "Enums"
     ]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][
+} ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][
     EnumName
   ]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
@@ -367,15 +417,13 @@ export type CompositeTypes<
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[
+  } ? keyof DatabaseWithoutInternals[
       PublicCompositeTypeNameOrOptions["schema"]
     ]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]][
+} ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]][
     "CompositeTypes"
   ][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends

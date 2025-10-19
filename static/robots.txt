@@ -1,3 +1,29 @@
-# allow crawling everything by default
+# Sentinel - AI Web3 Safety Platform
+# Robots.txt for search engine crawling
+
 User-agent: *
-Disallow:
+Allow: /
+
+# Disallow private/admin areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_app/
+Disallow: /_svelte/
+
+# Allow important pages
+Allow: /
+Allow: /auth/login
+Allow: /chat
+Allow: /analytics
+Allow: /wallet
+Allow: /transactions
+Allow: /contracts
+Allow: /logs
+Allow: /settings
+Allow: /family/
+
+# Sitemap location
+Sitemap: https://sentinel.app/sitemap.xml
+
+# Crawl delay (optional - be respectful to servers)
+Crawl-delay: 1

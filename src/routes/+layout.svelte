@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { invalidate } from '$app/navigation';
 
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import DynamicBreadcrumb from '$lib/components/dynamic-breadcrumb.svelte';
@@ -15,6 +16,7 @@
 	import ModeSwitch from '$lib/components/modewatcher.svelte';
 	import { ModeWatcher } from 'mode-watcher';
 	import Modewatcher from '$lib/components/modewatcher.svelte';
+	import SEOMeta from '$lib/components/seo-meta.svelte';
 
 	let { data, children } = $props();
 	let { session, supabase } = $derived(data);
@@ -26,7 +28,7 @@
 				invalidate('supabase:auth');
 			}
 		});
-		// Initialize analytics
+		// Initialize analytics - DISABLED
 		// analyticsStore.init();
 
 		// Initialize chat store
@@ -35,22 +37,15 @@
 		// Load user preferences (without wallet address - will load specific prefs on wallet connect)
 		userStore.load();
 
-		const analytics = useAnalytics();
+		// const analytics = useAnalytics();
 
-		// Track initial page view
-		analytics.trackPageView(window.location.pathname);
-
-		// Track page navigation
-		// const unsubscribe = page.subscribe(($page) => {
-		// 	if ($page.url) {
-		// 		analytics.trackPageView($page.url.pathname);
-		// 	}
-		// });
+		// Track initial page view - DISABLED
+		// analytics.trackPageView(window.location.pathname);
 
 		return () => {
 			data.subscription.unsubscribe();
 			// unsubscribe();
-			analyticsStore.stopAutoFlush();
+			// analyticsStore.stopAutoFlush();
 		};
 	});
 </script>
@@ -59,25 +54,29 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<SEOMeta />
+
 <Toaster />
 <ModeWatcher />
 
-<Sidebar.Provider>
-	<AppSidebar />
-	<Sidebar.Inset>
-		<header
-			class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
-		>
-			<div class="flex items-center justify-between gap-2 px-4 w-full">
-				<div class="flex items-center gap-2 px-4">
-					<Sidebar.Trigger class="-ml-1" />
-					<Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
-					<DynamicBreadcrumb />
-				</div>
+<Wallet>
+	<Sidebar.Provider>
+		<AppSidebar />
+		<Sidebar.Inset>
+			<header
+				class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
+			>
+				<div class="flex w-full items-center justify-between gap-2 px-4">
+					<div class="flex items-center gap-2 px-4">
+						<Sidebar.Trigger class="-ml-1" />
+						<Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
+						<DynamicBreadcrumb />
+					</div>
 
-				<Modewatcher />
-			</div>
-		</header>
-		{@render children?.()}
-	</Sidebar.Inset>
-</Sidebar.Provider>
+					<Modewatcher />
+				</div>
+			</header>
+			{@render children?.()}
+		</Sidebar.Inset>
+	</Sidebar.Provider>
+</Wallet>
