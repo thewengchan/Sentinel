@@ -154,7 +154,8 @@
 
 	// View transaction on explorer
 	function viewTransaction(txId: string) {
-		const explorerUrl = `https://testnet.algoexplorer.io/tx/${txId}`;
+		// Use algoscan.app as it's more reliable than algoexplorer.io
+		const explorerUrl = `https://testnet.algoscan.app/tx/${txId}`;
 		window.open(explorerUrl, '_blank');
 	}
 

@@ -212,8 +212,8 @@ To run Sentinel, you'll need to configure the following environment variables:
 
 ```bash
 # Algorand Smart Contract Configuration
-ALGORAND_APP_ID=0                    # Your deployed smart contract application ID
-ALGORAND_NETWORK=testnet             # Network: 'testnet' or 'mainnet'
+PUBLIC_ALGORAND_APP_ID=0                    # Your deployed smart contract application ID
+PUBLIC_ALGORAND_NETWORK=testnet             # Network: 'testnet' or 'mainnet'
 
 # OpenAI API Key for Moderation
 OPENAI_API_KEY=your_openai_api_key_here
@@ -250,9 +250,7 @@ By giving users control, visibility, and immutable proofs, Sentinel builds **a n
 
 ### Demo Video
 
-[PLACEHOLDER - Link to demo video showing the application in action]
-
-_This video demonstrates the complete user flow from chat interaction to incident detection and blockchain recording._
+[Link to demo video](https://drive.google.com/file/d/1I3aJTsfcqRJnhHbdzTzjzYO2tTzESKUZ/view?usp=sharing)
 
 ### Screenshots
 
@@ -335,22 +333,7 @@ class IncidentRecord(Struct):
 - **Size Limits**: Prevents storage abuse with safety caps
 - **Immutable Records**: Once recorded, incidents cannot be modified or deleted
 
-### Comprehensive Project Explanation Video
-
-[PLACEHOLDER - Link to comprehensive Loom-style video explaining the project]
-
-_This video will include:_
-
-- _Complete project walkthrough and architecture explanation_
-- _GitHub repository structure and code organization_
-- _Smart contract deployment and interaction demonstration_
-- _Full user flow from chat to blockchain recording_
-- _Technical implementation details and Algorand integration_
-- _How the project satisfies the custom smart contract requirement_
-
 ### Block Explorer Link
 
 **Deployed Smart Contract on Algorand Asset Hub:**
-[PLACEHOLDER - Link to block explorer showing deployed contract](https://testnet.algoexplorer.io/application/PLACEHOLDER_APP_ID)
-
-_Note: Contract will be deployed to Algorand testnet with full functionality demonstrated in the demo video._
+[PLACEHOLDER - Link to block explorer showing deployed contract](https://testnet.algoexplorer.io/application/748005351)

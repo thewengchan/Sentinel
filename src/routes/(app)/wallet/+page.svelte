@@ -448,7 +448,7 @@
 							const network = blockchainStore.network || 'testnet';
 							const address = walletStore.activeAddress;
 							if (address) {
-								window.open(`https://${network}.algoexplorer.io/address/${address}`, '_blank');
+								window.open(`https://${network}.algoscan.app/address/${address}`, '_blank');
 								analytics.trackFeature('view_on_explorer');
 							}
 						}}

@@ -13,6 +13,8 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		class: className,
@@ -22,6 +24,47 @@
 	}: HTMLAttributes<HTMLDivElement> & { supabase: SupabaseClient; redirectTo?: string } = $props();
 
 	const id = $props.id();
+
+	let email = $state('');
+	let password = $state('');
+	let loading = $state(false);
+	let error = $state('');
+
+	async function handleEmailPasswordLogin(e: Event) {
+		e.preventDefault();
+		loading = true;
+		error = '';
+
+		try {
+			const { data, error: signInError } = await supabase.auth.signInWithPassword({
+				email,
+				password
+			});
+
+			if (signInError) {
+				error = signInError.message;
+				toast.error('Login failed', {
+					description: signInError.message
+				});
+				return;
+			}
+
+			if (data.user) {
+				toast.success('Welcome back!', {
+					description: 'You have successfully logged in.'
+				});
+				await goto(redirectTo);
+			}
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+			error = errorMessage;
+			toast.error('Login failed', {
+				description: errorMessage
+			});
+		} finally {
+			loading = false;
+		}
+	}
 
 	async function signInWithGoogle() {
 		await supabase.auth.signInWithOAuth({
@@ -36,15 +79,27 @@
 <div class={cn('flex flex-col gap-6', className)} {...restProps}>
 	<Card.Root class="overflow-hidden p-0">
 		<Card.Content class="grid p-0 md:grid-cols-2">
-			<form class="p-6 md:p-8">
+			<form class="p-6 md:p-8" onsubmit={handleEmailPasswordLogin}>
 				<FieldGroup>
 					<div class="flex flex-col items-center gap-2 text-center">
 						<h1 class="text-2xl font-bold">Welcome back</h1>
 						<p class="text-balance text-muted-foreground">Login to your Sentinel account</p>
 					</div>
+					{#if error}
+						<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							{error}
+						</div>
+					{/if}
 					<Field>
 						<FieldLabel for="email-{id}">Email</FieldLabel>
-						<Input id="email-{id}" type="email" placeholder="m@example.com" required />
+						<Input
+							id="email-{id}"
+							type="email"
+							placeholder="m@example.com"
+							required
+							bind:value={email}
+							disabled={loading}
+						/>
 					</Field>
 					<Field>
 						<div class="flex items-center">
@@ -53,10 +108,18 @@
 								Forgot your password?
 							</a>
 						</div>
-						<Input id="password-{id}" type="password" required />
+						<Input
+							id="password-{id}"
+							type="password"
+							required
+							bind:value={password}
+							disabled={loading}
+						/>
 					</Field>
 					<Field>
-						<Button type="submit">Login</Button>
+						<Button type="submit" disabled={loading}>
+							{loading ? 'Logging in...' : 'Login'}
+						</Button>
 					</Field>
 					<FieldSeparator class="*:data-[slot=field-separator-content]:bg-card">
 						Or continue with
