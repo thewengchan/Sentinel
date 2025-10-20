@@ -20,26 +20,22 @@ export const GET: RequestHandler = async ({ params, locals }) => {
             }, { status: 400 });
         }
 
-        const supabase = getSupabaseClient(locals);
-
-        // Get current wallet address from context
-        const { data: walletAddress, error: contextError } = await supabase.rpc(
-            "get_current_wallet_address",
-        );
-
-        if (contextError || !walletAddress) {
+        // Check if user is authenticated
+        if (!locals.user) {
             return json({
                 success: false,
-                error: "Wallet context not set",
+                error: "Authentication required",
             }, { status: 401 });
         }
 
-        // Fetch session
+        const supabase = getSupabaseClient(locals);
+
+        // Fetch session using auth user ID
         const { data: session, error: sessionError } = await supabase
             .from("chat_sessions")
             .select("*")
             .eq("id", sessionId)
-            .eq("wallet_address", walletAddress)
+            .eq("user_id", locals.user.id)
             .single();
 
         if (sessionError) {
@@ -100,26 +96,22 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
             }, { status: 400 });
         }
 
-        const supabase = getSupabaseClient(locals);
-
-        // Get current wallet address from context
-        const { data: walletAddress, error: contextError } = await supabase.rpc(
-            "get_current_wallet_address",
-        );
-
-        if (contextError || !walletAddress) {
+        // Check if user is authenticated
+        if (!locals.user) {
             return json({
                 success: false,
-                error: "Wallet context not set",
+                error: "Authentication required",
             }, { status: 401 });
         }
 
-        // Update session
+        const supabase = getSupabaseClient(locals);
+
+        // Update session using auth user ID
         const { data: session, error: updateError } = await supabase
             .from("chat_sessions")
             .update({ title })
             .eq("id", sessionId)
-            .eq("wallet_address", walletAddress)
+            .eq("user_id", locals.user.id)
             .select()
             .single();
 
@@ -156,26 +148,22 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
             }, { status: 400 });
         }
 
-        const supabase = getSupabaseClient(locals);
-
-        // Get current wallet address from context
-        const { data: walletAddress, error: contextError } = await supabase.rpc(
-            "get_current_wallet_address",
-        );
-
-        if (contextError || !walletAddress) {
+        // Check if user is authenticated
+        if (!locals.user) {
             return json({
                 success: false,
-                error: "Wallet context not set",
+                error: "Authentication required",
             }, { status: 401 });
         }
 
-        // Delete session (CASCADE will handle messages)
+        const supabase = getSupabaseClient(locals);
+
+        // Delete session (CASCADE will handle messages) using auth user ID
         const { error: deleteError } = await supabase
             .from("chat_sessions")
             .delete()
             .eq("id", sessionId)
-            .eq("wallet_address", walletAddress);
+            .eq("user_id", locals.user.id);
 
         if (deleteError) {
             console.error("Error deleting session:", deleteError);

@@ -43,40 +43,38 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }, { status: 400 });
         }
 
-        const supabase = getSupabaseClient(locals);
-
-        // Get current wallet address from context
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: walletData, error: contextError } =
-            await (supabase.rpc as any)(
-                "get_current_wallet_address",
-            );
-
-        if (contextError || !walletData) {
+        // Check if user is authenticated
+        if (!locals.user) {
             return json({
                 success: false,
-                error: "Wallet context not set",
+                error: "Authentication required",
             }, { status: 401 });
         }
 
-        // Extract wallet address string (handle both string and object responses)
-        const walletAddress = typeof walletData === "string"
-            ? walletData
-            : (walletData as { wallet_address?: string })?.wallet_address;
+        const supabase = getSupabaseClient(locals);
 
-        if (!walletAddress) {
+        // Get user's wallet address
+        const { data: user, error: userError } = await supabase
+            .from("users")
+            .select("wallet_address")
+            .eq("id", locals.user.id)
+            .single();
+
+        if (userError || !user?.wallet_address) {
             return json({
                 success: false,
                 error: "Wallet address not found",
             }, { status: 401 });
         }
 
+        const walletAddress = user.wallet_address;
+
         // Verify session belongs to user
         const { error: sessionError } = await supabase
             .from("chat_sessions")
             .select("id")
             .eq("id", session_id)
-            .eq("wallet_address", walletAddress)
+            .eq("user_id", locals.user.id)
             .single();
 
         if (sessionError) {

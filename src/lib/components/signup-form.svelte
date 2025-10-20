@@ -27,38 +27,80 @@
 
 	let email = $state('');
 	let password = $state('');
+	let confirmPassword = $state('');
 	let loading = $state(false);
 	let error = $state('');
 
-	async function handleEmailPasswordLogin(e: Event) {
+	async function handleEmailPasswordSignup(e: Event) {
 		e.preventDefault();
 		loading = true;
 		error = '';
 
+		// Validate passwords match
+		if (password !== confirmPassword) {
+			error = 'Passwords do not match';
+			toast.error('Signup failed', {
+				description: 'Passwords do not match'
+			});
+			loading = false;
+			return;
+		}
+
+		// Validate password length
+		if (password.length < 6) {
+			error = 'Password must be at least 6 characters';
+			toast.error('Signup failed', {
+				description: 'Password must be at least 6 characters'
+			});
+			loading = false;
+			return;
+		}
+
 		try {
-			const { data, error: signInError } = await supabase.auth.signInWithPassword({
+			const { data, error: signUpError } = await supabase.auth.signUp({
 				email,
-				password
+				password,
+				options: {
+					emailRedirectTo: `${page.url.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+				}
 			});
 
-			if (signInError) {
-				error = signInError.message;
-				toast.error('Login failed', {
-					description: signInError.message
+			if (signUpError) {
+				error = signUpError.message;
+				toast.error('Signup failed', {
+					description: signUpError.message
 				});
 				return;
 			}
 
 			if (data.user) {
-				toast.success('Welcome back!', {
-					description: 'You have successfully logged in.'
-				});
-				await goto(redirectTo);
+				// Check if email confirmation is required
+				if (data.user.identities && data.user.identities.length === 0) {
+					toast.error('Account already exists', {
+						description: 'An account with this email already exists. Please login instead.'
+					});
+					return;
+				}
+
+				// If user is confirmed (email verification disabled), redirect
+				if (data.user.confirmed_at || data.session) {
+					toast.success('Welcome to Sentinel!', {
+						description: 'Your account has been created successfully.'
+					});
+					await goto(redirectTo);
+				} else {
+					// Email verification required
+					toast.success('Check your email', {
+						description: 'We sent you a confirmation link to complete your signup.'
+					});
+					// You might want to redirect to a "check your email" page
+					await goto('/auth/login?message=check-email');
+				}
 			}
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
 			error = errorMessage;
-			toast.error('Login failed', {
+			toast.error('Signup failed', {
 				description: errorMessage
 			});
 		} finally {
@@ -66,7 +108,7 @@
 		}
 	}
 
-	async function signInWithGoogle() {
+	async function signUpWithGoogle() {
 		await supabase.auth.signInWithOAuth({
 			provider: 'google',
 			options: {
@@ -79,11 +121,11 @@
 <div class={cn('flex flex-col gap-6', className)} {...restProps}>
 	<Card.Root class="overflow-hidden p-0">
 		<Card.Content class="grid p-0 md:grid-cols-2">
-			<form class="p-6 md:p-8" onsubmit={handleEmailPasswordLogin}>
+			<form class="p-6 md:p-8" onsubmit={handleEmailPasswordSignup}>
 				<FieldGroup>
 					<div class="flex flex-col items-center gap-2 text-center">
-						<h1 class="text-2xl font-bold">Welcome back to Sentinel</h1>
-						<p class="text-balance text-muted-foreground">Login to your account</p>
+						<h1 class="text-2xl font-bold">Create an account</h1>
+						<p class="text-balance text-muted-foreground">Sign up for your Sentinel account</p>
 					</div>
 					{#if error}
 						<div class="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -102,23 +144,32 @@
 						/>
 					</Field>
 					<Field>
-						<div class="flex items-center">
-							<FieldLabel for="password-{id}">Password</FieldLabel>
-							<a href="##" class="ml-auto text-sm underline-offset-2 hover:underline">
-								Forgot your password?
-							</a>
-						</div>
+						<FieldLabel for="password-{id}">Password</FieldLabel>
 						<Input
 							id="password-{id}"
 							type="password"
+							placeholder="Minimum 6 characters"
 							required
 							bind:value={password}
 							disabled={loading}
+							minlength={6}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel for="confirm-password-{id}">Confirm Password</FieldLabel>
+						<Input
+							id="confirm-password-{id}"
+							type="password"
+							placeholder="Re-enter your password"
+							required
+							bind:value={confirmPassword}
+							disabled={loading}
+							minlength={6}
 						/>
 					</Field>
 					<Field>
 						<Button type="submit" disabled={loading}>
-							{loading ? 'Logging in...' : 'Login'}
+							{loading ? 'Creating account...' : 'Sign up'}
 						</Button>
 					</Field>
 					<FieldSeparator class="*:data-[slot=field-separator-content]:bg-card">
@@ -132,16 +183,16 @@
 									fill="currentColor"
 								/>
 							</svg>
-							<span class="sr-only">Login with Apple</span>
+							<span class="sr-only">Sign up with Apple</span>
 						</Button>
-						<Button variant="outline" type="button" onclick={signInWithGoogle}>
+						<Button variant="outline" type="button" onclick={signUpWithGoogle}>
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 								<path
 									d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
 									fill="currentColor"
 								/>
 							</svg>
-							<span class="sr-only">Login with Google</span>
+							<span class="sr-only">Sign up with Google</span>
 						</Button>
 						<Button variant="outline" type="button">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -150,11 +201,11 @@
 									fill="currentColor"
 								/>
 							</svg>
-							<span class="sr-only">Login with Meta</span>
+							<span class="sr-only">Sign up with Meta</span>
 						</Button>
 					</Field>
 					<FieldDescription class="text-center">
-						Don't have an account? <a href="/auth/signup" class="underline">Sign up</a>
+						Already have an account? <a href="/auth/login" class="underline">Login</a>
 					</FieldDescription>
 				</FieldGroup>
 			</form>
@@ -162,7 +213,7 @@
 				<img
 					src="/sentinel-logo.jpeg"
 					alt="Sentinel Logo"
-					class="absolute inset-0 h-full w-full object-contain object-center"
+					class="absolute inset-0 h-full w-full object-contain"
 				/>
 			</div>
 		</Card.Content>

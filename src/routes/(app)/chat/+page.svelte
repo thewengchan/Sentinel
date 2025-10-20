@@ -19,6 +19,7 @@
 	import { useAnalytics } from '$lib/composables/useAnalytics.svelte';
 	import { toast } from 'svelte-sonner';
 	import SEOMeta from '$lib/components/seo-meta.svelte';
+	import Shield from '@lucide/svelte/icons/shield';
 
 	let input = $state('');
 	let chat = $state<Chat | null>(null);
@@ -435,48 +436,52 @@
 		{#if !chat || chat.messages.length === 0}
 			<div class="flex h-full flex-col items-center justify-center text-center">
 				<Avatar class="mb-4 size-16">
-					<AvatarFallback class="bg-muted text-2xl">💬</AvatarFallback>
+					<AvatarFallback class="bg-muted text-2xl"><Shield /></AvatarFallback>
 				</Avatar>
 				<h2 class="mb-2 text-lg font-medium">Start a conversation</h2>
-				<p class="max-w-md text-muted-foreground">
-					Send a message to begin chatting with your AI assistant.
-				</p>
+				<p class="max-w-md text-muted-foreground">Safeguarded by Sentinel</p>
 			</div>
 		{:else}
 			{#each chat?.messages || [] as message, messageIndex (messageIndex)}
-				<div class="flex gap-3 {message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}">
-					<Avatar class="size-8 shrink-0">
+				<div class="flex gap-3 {message.role === 'user' ? 'flex-row-reverse' : 'flex-row'} group">
+					<Avatar class="size-9 shrink-0 shadow-sm ring-2 ring-background">
 						<AvatarFallback class={getAvatarColor(message.role)}>
 							{getInitials(message.role)}
 						</AvatarFallback>
 					</Avatar>
 					<div
-						class="flex max-w-[80%] flex-col gap-1 {message.role === 'user'
+						class="flex max-w-[75%] flex-col gap-2 {message.role === 'user'
 							? 'items-end'
 							: 'items-start'}"
 					>
-						<div class="flex items-center gap-2">
-							<Badge variant="outline" class="text-xs">
+						<div class="flex items-center gap-2 px-1">
+							<Badge
+								variant="outline"
+								class="text-xs font-medium opacity-70 transition-opacity group-hover:opacity-100"
+							>
 								{message.role === 'user' ? 'You' : 'Assistant'}
 							</Badge>
 						</div>
-						<Card
-							class="p-4 {message.role === 'user'
-								? 'bg-primary text-primary-foreground'
-								: 'bg-muted'}"
+						<div
+							class="relative rounded-2xl px-5 py-3.5 shadow-md transition-all duration-200 hover:shadow-lg {message.role ===
+							'user'
+								? 'rounded-tr-sm bg-gradient-to-br from-primary to-primary/90 text-primary-foreground'
+								: 'rounded-tl-sm border border-border/50 bg-gradient-to-br from-muted to-muted/80'}"
 						>
 							{#each message.parts as part, partIndex (partIndex)}
 								{#if part.type === 'text'}
-									<div class="text-sm leading-relaxed whitespace-pre-wrap">
+									<div
+										class="text-[0.9375rem] leading-relaxed font-normal tracking-normal whitespace-pre-wrap"
+									>
 										{part.text}
 									</div>
 								{/if}
 							{/each}
-						</Card>
+						</div>
 						<!-- Moderation Badge -->
 						{#each [getModerationBadge(message)] as moderationBadge}
 							{#if moderationBadge}
-								<Badge variant={moderationBadge.variant} class={moderationBadge.class}>
+								<Badge variant={moderationBadge.variant} class="{moderationBadge.class} px-1">
 									{moderationBadge.text}
 								</Badge>
 							{/if}
@@ -503,9 +508,7 @@
 			/>
 			<Button
 				type="submit"
-				disabled={!input.trim() ||
-					!walletStore.isConnected ||
-					chatStore.isBlocked}
+				disabled={!input.trim() || !walletStore.isConnected || chatStore.isBlocked}
 				class="shrink-0"
 			>
 				<svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

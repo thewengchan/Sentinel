@@ -3,19 +3,24 @@
 	import type { PageData } from './$types';
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import { toast } from 'svelte-sonner';
 	import { isBlockchainConfigured, SMART_CONTRACT_CONFIG } from '$lib/algorand/config';
 	import { testnetClient, mainnetClient } from '$lib/algorand/client';
 	import { formatIncidentForChain, submitIncidentToChain } from '$lib/algorand/incidents';
-	import { walletStore } from '$lib/stores';
 	import { useWallet } from '@txnlab/use-wallet-svelte';
+	import QRCode from 'qrcode';
 
 	let { data }: { data: PageData } = $props();
 	const { activeWallet, transactionSigner } = useWallet();
 
 	let submitting = $state<Record<string, boolean>>({});
+	let abortControllers = $state<Record<string, AbortController>>({});
+	let qrDialogOpen = $state(false);
+	let qrCodeDataUrl = $state('');
+	let currentTxUrl = $state('');
 
 	// Format date
 	function formatDate(dateString: string): string {
@@ -45,6 +50,16 @@
 		}
 	}
 
+	// Cancel blockchain submission
+	function cancelSubmission(incidentId: string) {
+		if (abortControllers[incidentId]) {
+			abortControllers[incidentId].abort();
+			delete abortControllers[incidentId];
+			submitting[incidentId] = false;
+			toast.info('Submission cancelled');
+		}
+	}
+
 	// Submit incident to blockchain
 	async function submitToBlockchain(incidentId: string) {
 		const wallet = activeWallet();
@@ -64,6 +79,8 @@
 		}
 
 		submitting[incidentId] = true;
+		const abortController = new AbortController();
+		abortControllers[incidentId] = abortController;
 		console.log(`🔗 Submitting incident ${incidentId.slice(0, 8)}... to blockchain`);
 
 		try {
@@ -103,9 +120,19 @@
 			client.setSigner(wallet, transactionSigner);
 			console.log(`   🌐 Using ${SMART_CONTRACT_CONFIG.NETWORK} network`);
 
+			// Check if aborted before submission
+			if (abortController.signal.aborted) {
+				throw new Error('Submission cancelled');
+			}
+
 			// Submit to blockchain
 			console.log(`   📤 Submitting transaction...`);
 			const result = await submitIncidentToChain(chainIncident, client, data.walletAddress!);
+
+			// Check if aborted after submission
+			if (abortController.signal.aborted) {
+				throw new Error('Submission cancelled');
+			}
 
 			if (result.success) {
 				console.log(`   ✅ Transaction successful: ${result.txId}`);
@@ -117,7 +144,8 @@
 					body: JSON.stringify({
 						chain_status: 'submitted',
 						tx_id: result.txId
-					})
+					}),
+					signal: abortController.signal
 				});
 
 				toast.success('Successfully submitted to blockchain! 🎉', {
@@ -130,6 +158,11 @@
 				throw new Error(result.error || 'Transaction failed');
 			}
 		} catch (error) {
+			if (error instanceof Error && error.name === 'AbortError') {
+				console.log('   ⚠️ Submission cancelled by user');
+				return;
+			}
+
 			console.error('   ❌ Blockchain submission error:', error);
 			toast.error('Blockchain submission failed', {
 				description: error instanceof Error ? error.message : 'Unknown error'
@@ -148,15 +181,48 @@
 				console.error('Failed to update incident status:', updateError);
 			}
 		} finally {
+			delete abortControllers[incidentId];
 			submitting[incidentId] = false;
 		}
 	}
 
-	// View transaction on explorer
-	function viewTransaction(txId: string) {
-		// Use algoscan.app as it's more reliable than algoexplorer.io
-		const explorerUrl = `https://testnet.algoscan.app/tx/${txId}`;
-		window.open(explorerUrl, '_blank');
+	// Generate QR code and show dialog
+	async function viewTransaction(txId: string, network: 'testnet' | 'mainnet' = 'testnet') {
+		const base =
+			network === 'mainnet'
+				? 'https://explorer.perawallet.app'
+				: 'https://testnet.explorer.perawallet.app';
+		// Pera expects trailing slash; keep it for faster redirect-free loads.
+		const url = `${base}/tx/${encodeURIComponent(txId)}/`;
+		currentTxUrl = url;
+
+		try {
+			// Generate QR code as data URL
+			const dataUrl = await QRCode.toDataURL(url, {
+				width: 300,
+				margin: 2,
+				color: {
+					dark: '#000000',
+					light: '#ffffff'
+				}
+			});
+			qrCodeDataUrl = dataUrl;
+			qrDialogOpen = true;
+		} catch (error) {
+			console.error('Failed to generate QR code:', error);
+			toast.error('Failed to generate QR code');
+			// Fallback to opening the URL directly
+			window.open(url, '_blank', 'noopener,noreferrer');
+		}
+	}
+
+	export function viewBlock(round: number, network: 'testnet' | 'mainnet' = 'testnet') {
+		const base =
+			network === 'mainnet'
+				? 'https://explorer.perawallet.app'
+				: 'https://testnet.explorer.perawallet.app';
+		const url = `${base}/block/${round}/`;
+		window.open(url, '_blank', 'noopener,noreferrer');
 	}
 
 	// Filter pending high-severity incidents
@@ -290,13 +356,20 @@
 												View TX
 											</Button>
 										{:else if incident.chain_status === 'pending' && incident.severity >= 2 && blockchainConfigured}
-											<Button
-												size="sm"
-												onclick={() => submitToBlockchain(incident.id)}
-												disabled={submitting[incident.id]}
-											>
-												{submitting[incident.id] ? 'Submitting...' : 'Submit to Chain'}
-											</Button>
+											{#if submitting[incident.id]}
+												<Button
+													size="sm"
+													variant="outline"
+													onclick={() => cancelSubmission(incident.id)}
+												>
+													Cancel
+												</Button>
+												<Button size="sm" disabled>Submitting...</Button>
+											{:else}
+												<Button size="sm" onclick={() => submitToBlockchain(incident.id)}>
+													Submit to Chain
+												</Button>
+											{/if}
 										{/if}
 									</div>
 								</Table.Cell>
@@ -308,3 +381,34 @@
 		</Card.Content>
 	</Card.Root>
 </div>
+
+<!-- QR Code Dialog -->
+<Dialog.Root bind:open={qrDialogOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Transaction QR Code</Dialog.Title>
+			<Dialog.Description>
+				Scan this QR code to view the transaction on your mobile device
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="flex flex-col items-center gap-4 py-4">
+			{#if qrCodeDataUrl}
+				<img src={qrCodeDataUrl} alt="Transaction QR Code" class="rounded-lg border" />
+			{/if}
+			<div class="flex w-full flex-col gap-2">
+				<p class="text-center text-sm text-muted-foreground">Or click the link below:</p>
+				<a
+					href={currentTxUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-center text-sm font-medium break-all text-blue-600 hover:underline dark:text-blue-400"
+				>
+					{currentTxUrl}
+				</a>
+			</div>
+		</div>
+		<Dialog.Footer>
+			<Button variant="outline" onclick={() => (qrDialogOpen = false)}>Close</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
